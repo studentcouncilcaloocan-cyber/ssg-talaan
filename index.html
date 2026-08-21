@@ -279,20 +279,6 @@ select:focus {
   color: #17266b;
 }
 
-.topbar-account {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 7px;
-  min-width: 280px;
-}
-
-.topbar-account .talaan-top-search {
-  margin: 0;
-  width: min(520px, 100%);
-}
-
-
 .role-badge {
   background: #edf2ff;
   color: #17266b;
@@ -870,15 +856,279 @@ th {
     gap: 10px;
   }
 
-  .topbar-account {
-    width: 100%;
-    align-items: stretch;
-  }
+}
 
-  .topbar-account .talaan-top-search {
-    width: 100%;
-  }
 
+
+/* =====================================================
+   STUDENT TALAAN ID DIRECTORY / ID CARD
+===================================================== */
+
+.talaan-id-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  margin:18px 0 20px;
+  padding:16px;
+  background:#f5f7fb;
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+}
+
+.talaan-id-toolbar .left {
+  min-width:220px;
+}
+
+.talaan-id-toolbar .title {
+  font-weight:900;
+  color:#17266b;
+  font-size:16px;
+}
+
+.talaan-id-toolbar .hint {
+  color:#718096;
+  font-size:12px;
+  margin-top:4px;
+}
+
+.talaan-id-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.talaan-id-action {
+  border:0;
+  border-radius:10px;
+  padding:10px 13px;
+  background:#17266b;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.talaan-id-action.secondary {
+  background:#e8edf4;
+  color:#24324a;
+}
+
+.talaan-id-action:hover {
+  transform:translateY(-1px);
+}
+
+.talaan-id-year,
+.talaan-id-course,
+.talaan-id-section {
+  background:#fff;
+  border:1px solid #e0e7f0;
+  border-radius:16px;
+  margin:10px 0;
+  overflow:hidden;
+}
+
+.talaan-id-year > summary,
+.talaan-id-course > summary,
+.talaan-id-section > summary {
+  cursor:pointer;
+  list-style:none;
+}
+
+.talaan-id-year > summary::-webkit-details-marker,
+.talaan-id-course > summary::-webkit-details-marker,
+.talaan-id-section > summary::-webkit-details-marker {
+  display:none;
+}
+
+.talaan-id-year > summary {
+  padding:16px 18px;
+  font-size:17px;
+  font-weight:900;
+  color:#17266b;
+  background:#f7f9fc;
+}
+
+.talaan-id-course > summary {
+  padding:13px 16px;
+  font-weight:900;
+  color:#263b73;
+}
+
+.talaan-id-section > summary {
+  padding:11px 14px;
+  font-weight:800;
+  color:#34445f;
+}
+
+.talaan-id-summary-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.talaan-id-summary-meta {
+  color:#718096;
+  font-size:12px;
+  font-weight:700;
+}
+
+.talaan-id-section-body,
+.talaan-id-course-body,
+.talaan-id-year-body {
+  padding:0 14px 14px;
+}
+
+.talaan-id-student {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:12px 4px;
+  border-top:1px solid #edf1f6;
+}
+
+.talaan-id-student-name {
+  font-weight:900;
+  color:#17266b;
+}
+
+.talaan-id-student-meta {
+  margin-top:3px;
+  font-size:12px;
+  color:#718096;
+}
+
+.talaan-id-student-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  justify-content:flex-end;
+}
+
+.talaan-id-student-actions button {
+  border:0;
+  border-radius:9px;
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:800;
+  background:#17266b;
+  color:#fff;
+}
+
+.talaan-id-student-actions button.secondary {
+  background:#e8edf4;
+  color:#24324a;
+}
+
+.talaan-id-empty {
+  padding:12px 4px;
+  color:#718096;
+  font-size:13px;
+}
+
+.talaan-id-card-preview {
+  width:min(100%,430px);
+  margin:0 auto;
+  background:#fff;
+  border-radius:20px;
+  box-shadow:0 18px 50px rgba(19,45,85,.18);
+  overflow:hidden;
+}
+
+.talaan-id-card-preview img {
+  display:block;
+  width:100%;
+  height:auto;
+}
+
+.talaan-id-modal {
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(10,20,45,.62);
+}
+
+.talaan-id-modal-card {
+  width:min(94vw,520px);
+  max-height:94vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:22px;
+  padding:18px;
+  box-shadow:0 25px 70px rgba(0,0,0,.28);
+}
+
+.talaan-id-modal-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.talaan-id-modal-title {
+  color:#17266b;
+  font-weight:900;
+  font-size:18px;
+}
+
+.talaan-id-close {
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:50%;
+  background:#edf1f6;
+  color:#24324a;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.talaan-id-modal-actions {
+  display:flex;
+  gap:9px;
+  margin-top:14px;
+}
+
+.talaan-id-modal-actions button {
+  flex:1;
+  border:0;
+  border-radius:11px;
+  padding:12px;
+  font-weight:900;
+  cursor:pointer;
+  background:#17266b;
+  color:#fff;
+}
+
+.talaan-id-modal-actions button.secondary {
+  background:#e8edf4;
+  color:#24324a;
+}
+
+.talaan-id-profile-wrap {
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.talaan-id-profile-card {
+  width:min(100%,430px);
+}
+
+@media (max-width:650px) {
+  .talaan-id-student {
+    grid-template-columns:1fr;
+  }
+  .talaan-id-student-actions {
+    justify-content:flex-start;
+  }
 }
 
 </style>
@@ -887,13 +1137,6 @@ th {
 
 
 <body>
-<div id="talaanBootScreen" aria-hidden="true">
-  <div class="talaan-boot-inner">
-    <img src="" id="talaanBootLogo" alt="SSG TALAAN">
-    <div class="talaan-boot-title">SSG TALAAN</div>
-    <div class="talaan-boot-bar"><span></span></div>
-  </div>
-</div>
 
 
 <!-- =====================================================
@@ -1111,12 +1354,16 @@ th {
         LVCC Caloocan
       </div>
 
-      <div class="topbar-account">
-        <div class="talaan-top-search" id="talaanTopSearch">
-          <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-          <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
-        </div>
-        <div id="roleBadge" class="role-badge">Guest</div>
+      <div class="talaan-top-search" id="talaanTopSearch">
+        <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+        <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+      </div>
+
+      <div
+        id="roleBadge"
+        class="role-badge"
+      >
+        Guest
       </div>
 
     </div>
@@ -4044,20 +4291,6 @@ function escapeAttribute(
 .talaan-auth-card{width:100%;max-width:480px;background:#fff;border-radius:24px;padding:26px;box-shadow:0 25px 80px rgba(0,0,0,.25);animation:talaanPageIn .25s ease}
 .talaan-auth-logo-strip{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 5px;height:52px}
 .talaan-auth-logo-strip img{height:46px;width:auto;max-width:100px;object-fit:contain}
-
-/* =====================================================
-   TALAAN REFRESH BOOT SCREEN
-   ===================================================== */
-#talaanBootScreen{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .28s ease,visibility .28s ease}
-#talaanBootScreen.talaan-boot-hide{opacity:0;visibility:hidden;pointer-events:none}
-.talaan-boot-inner{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
-#talaanBootLogo{width:92px;height:92px;object-fit:contain;animation:talaanLogoPulse 1.35s ease-in-out infinite}
-.talaan-boot-title{font-size:22px;font-weight:900;letter-spacing:1px;color:#17266b}
-.talaan-boot-bar{width:150px;height:5px;border-radius:99px;background:#e8edf5;overflow:hidden;margin-top:3px}
-.talaan-boot-bar span{display:block;height:100%;width:0;background:#17266b;border-radius:99px;animation:talaanBootFill 1.35s ease-in-out infinite}
-@keyframes talaanBootFill{0%{width:0;opacity:.5}55%{width:100%;opacity:1}100%{width:100%;opacity:.5}}
-@keyframes talaanLogoPulse{0%,100%{transform:scale(.94);opacity:.72}50%{transform:scale(1);opacity:1}}
-
 .talaan-welcome-logo-strip{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 7px;height:48px}
 .talaan-welcome-logo-strip img{height:42px;width:auto;max-width:92px;object-fit:contain}
 .talaan-role-tabs button,.talaan-mode-tabs button{font-size:12px;padding:8px 5px}
@@ -4646,6 +4879,12 @@ function showDashboardSheet() {
     '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
   '</div></div>';
 
+  if (role === 'Secretary' || role === 'Teacher' || role === 'Admin') {
+    html += '<div class="dashboard-section"><h3 class="dashboard-section-title">🔎 Search Student</h3>' +
+      '<div class="talaan-search-row"><input id="studentSearchInput" placeholder="Search student name..."><button class="primary-button" onclick="searchStudent_()">SEARCH</button></div>' +
+      '<div id="studentSearchResults"></div></div>';
+  }
+
   setPage_(html);
 }
 
@@ -4704,6 +4943,406 @@ async function showAttendance(sheetName) {
   }
 }
 
+/* =====================================================
+   STUDENT TALAAN ID DIRECTORY
+===================================================== */
+
+function getStudentCourseClient_(student) {
+  const section = String(student.section || '').trim().toUpperCase();
+  if (section === 'HCS') return 'HCS';
+  if (section === 'ENTREP' || section === 'ENTREPRENEURSHIP') return 'Entrepreneurship';
+  if (/^[1-4]A$/.test(section)) return 'Broadcasting';
+  if (/^[1-4]B$/.test(section)) return 'Communication';
+  if (section.indexOf('BROADCAST') !== -1) return 'Broadcasting';
+  if (section.indexOf('COMM') !== -1) return 'Communication';
+  return section || 'Other';
+}
+
+function getStudentIdSafeFileName_(student) {
+  const name = String(student.name || 'Student').trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  const id = String(student.studentId || 'NO_ID').trim().replace(/[^a-z0-9_-]+/gi, '_');
+  return 'TALAAN_ID_' + (name || 'Student') + '_' + (id || 'NO_ID') + '.png';
+}
+
+function groupStudentDirectory_(students) {
+  const years = {};
+  ['1','2','3','4'].forEach(function(year) {
+    years[year] = {yearLevel:year, courses:{}};
+  });
+
+  (students || []).forEach(function(student) {
+    const year = String(student.yearLevel || '');
+    if (!years[year]) return;
+    const course = getStudentCourseClient_(student);
+    if (!years[year].courses[course]) {
+      years[year].courses[course] = {name:course, sections:{}};
+    }
+    const section = String(student.section || 'UNSPECIFIED').trim() || 'UNSPECIFIED';
+    if (!years[year].courses[course].sections[section]) {
+      years[year].courses[course].sections[section] = [];
+    }
+    years[year].courses[course].sections[section].push(student);
+  });
+
+  return years;
+}
+
+function getSortedCourseNamesClient_(courses) {
+  const order = ['Broadcasting','Communication','HCS','Entrepreneurship','Other'];
+  return Object.keys(courses || {}).sort(function(a,b) {
+    const ai = order.indexOf(a), bi = order.indexOf(b);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return a.localeCompare(b);
+  });
+}
+
+function escapeAttr_(value) {
+  return escapeHtml(String(value == null ? '' : value))
+    .replace(/'/g, '&#39;');
+}
+
+function openStudentIdPreview_(index) {
+  const list = window.talaanStudentDirectoryData || [];
+  const student = list[Number(index)];
+  if (!student) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'talaan-id-modal';
+  modal.id = 'talaanStudentIdModal';
+  modal.onclick = function(e) {
+    if (e.target === modal) closeStudentIdPreview_();
+  };
+  modal.innerHTML =
+    '<div class="talaan-id-modal-card" onclick="event.stopPropagation()">' +
+      '<div class="talaan-id-modal-head">' +
+        '<div class="talaan-id-modal-title">My TALAAN ID</div>' +
+        '<button class="talaan-id-close" onclick="closeStudentIdPreview_()">×</button>' +
+      '</div>' +
+      '<div class="talaan-id-card-preview" id="studentIdPreviewCard"></div>' +
+      '<div class="talaan-id-modal-actions">' +
+        '<button class="secondary" onclick="closeStudentIdPreview_()">Close</button>' +
+        '<button onclick="downloadStudentIdPng_(' + Number(index) + ')">Download PNG</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  renderStudentIdCard_(student, 'studentIdPreviewCard').catch(function(error) {
+    const target = document.getElementById('studentIdPreviewCard');
+    if (target) target.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message || String(error)) + '</div>';
+  });
+}
+
+function closeStudentIdPreview_() {
+  const modal = document.getElementById('talaanStudentIdModal');
+  if (modal) modal.remove();
+}
+
+function getTalaanLogoImage_() {
+  return new Promise(function(resolve, reject) {
+    const img = new Image();
+    img.onload = function() { resolve(img); };
+    img.onerror = function() { reject(new Error('TALAAN logo could not be loaded.')); };
+    img.src = TALAAN_LOGO_DATA;
+  });
+}
+
+function getQrDataUrl_(text, size) {
+  return new Promise(function(resolve, reject) {
+    if (typeof QRCode === 'undefined') {
+      reject(new Error('QR code library is not available.'));
+      return;
+    }
+
+    const holder = document.createElement('div');
+    holder.style.position = 'fixed';
+    holder.style.left = '-10000px';
+    holder.style.top = '-10000px';
+    holder.style.width = size + 'px';
+    holder.style.height = size + 'px';
+    holder.style.background = '#fff';
+    document.body.appendChild(holder);
+
+    try {
+      new QRCode(holder, {
+        text: String(text || ''),
+        width: size,
+        height: size,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (error) {
+      holder.remove();
+      reject(error);
+      return;
+    }
+
+    setTimeout(function() {
+      try {
+        const canvas = holder.querySelector('canvas');
+        if (canvas) {
+          const data = canvas.toDataURL('image/png');
+          holder.remove();
+          resolve(data);
+          return;
+        }
+
+        const img = holder.querySelector('img');
+        if (!img) throw new Error('QR code image was not generated.');
+        if (img.complete && img.naturalWidth) {
+          const canvas2 = document.createElement('canvas');
+          canvas2.width = size;
+          canvas2.height = size;
+          const ctx = canvas2.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0,0,size,size);
+          ctx.drawImage(img,0,0,size,size);
+          const data2 = canvas2.toDataURL('image/png');
+          holder.remove();
+          resolve(data2);
+          return;
+        }
+
+        img.onload = function() {
+          const canvas3 = document.createElement('canvas');
+          canvas3.width = size;
+          canvas3.height = size;
+          const ctx3 = canvas3.getContext('2d');
+          ctx3.fillStyle = '#fff';
+          ctx3.fillRect(0,0,size,size);
+          ctx3.drawImage(img,0,0,size,size);
+          const data3 = canvas3.toDataURL('image/png');
+          holder.remove();
+          resolve(data3);
+        };
+        img.onerror = function() {
+          holder.remove();
+          reject(new Error('QR code image could not be loaded.'));
+        };
+      } catch (error) {
+        holder.remove();
+        reject(error);
+      }
+    }, 80);
+  });
+}
+
+async function buildStudentIdPng_(student) {
+  if (!student || !student.studentId) {
+    throw new Error('This student does not have a TALAAN ID yet.');
+  }
+
+  const width = 900;
+  const height = 1200;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,width,height);
+
+  // Clean TALAAN border.
+  ctx.strokeStyle = '#17266b';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(20,20,width-40,height-40);
+
+  // Soft inner panel.
+  ctx.fillStyle = '#f6f8fc';
+  ctx.fillRect(50,50,width-100,height-100);
+
+  const logo = await getTalaanLogoImage_();
+  const maxLogoW = 300;
+  const maxLogoH = 145;
+  const scale = Math.min(maxLogoW / logo.width, maxLogoH / logo.height);
+  const logoW = logo.width * scale;
+  const logoH = logo.height * scale;
+  ctx.drawImage(logo,(width-logoW)/2,78,logoW,logoH);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#718096';
+  ctx.font = '700 30px Arial, sans-serif';
+  ctx.fillText('My TALAAN ID', width/2, 275);
+
+  ctx.fillStyle = '#17266b';
+  ctx.font = '900 55px Arial, sans-serif';
+  ctx.fillText(String(student.studentId), width/2, 350);
+
+  const qrData = await getQrDataUrl_(student.studentId, 330);
+  const qrImg = await new Promise(function(resolve,reject) {
+    const img = new Image();
+    img.onload = function(){ resolve(img); };
+    img.onerror = function(){ reject(new Error('QR code could not be prepared.')); };
+    img.src = qrData;
+  });
+
+  const qrSize = 330;
+  const qrX = (width-qrSize)/2;
+  const qrY = 390;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(qrX-18,qrY-18,qrSize+36,qrSize+36);
+  ctx.drawImage(qrImg,qrX,qrY,qrSize,qrSize);
+
+  ctx.fillStyle = '#17266b';
+  ctx.font = '900 39px Arial, sans-serif';
+  const name = String(student.name || '').toUpperCase();
+  const maxNameWidth = 740;
+  let nameFont = 39;
+  while (nameFont > 25) {
+    ctx.font = '900 ' + nameFont + 'px Arial, sans-serif';
+    if (ctx.measureText(name).width <= maxNameWidth) break;
+    nameFont -= 2;
+  }
+  ctx.fillText(name, width/2, 825);
+
+  ctx.fillStyle = '#53627a';
+  ctx.font = '800 31px Arial, sans-serif';
+  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 885);
+
+  ctx.fillStyle = '#718096';
+  ctx.font = '700 20px Arial, sans-serif';
+  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 925);
+
+  ctx.strokeStyle = '#d7dee9';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(155,970);
+  ctx.lineTo(745,970);
+  ctx.stroke();
+
+  ctx.fillStyle = '#718096';
+  ctx.font = '600 18px Arial, sans-serif';
+  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1015);
+
+  return canvas.toDataURL('image/png');
+}
+
+async function renderStudentIdCard_(student, targetId) {
+  const target = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
+  if (!target) return;
+  target.innerHTML = '<div class="status">Generating ID...</div>';
+  const dataUrl = await buildStudentIdPng_(student);
+  target.innerHTML = '<img src="' + dataUrl + '" alt="TALAAN ID for ' + escapeAttr_(student.name) + '">';
+  return dataUrl;
+}
+
+async function downloadStudentIdPng_(index) {
+  const list = window.talaanStudentDirectoryData || [];
+  const student = list[Number(index)];
+  if (!student) return;
+
+  try {
+    const dataUrl = await buildStudentIdPng_(student);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = getStudentIdSafeFileName_(student);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (error) {
+    alert('Unable to generate this ID: ' + (error.message || error));
+  }
+}
+
+function collectStudentsFromSection_(sectionStudents) {
+  return (sectionStudents || []).slice().sort(function(a,b) {
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+}
+
+async function downloadStudentIdZip_(students, zipName, progressLabel) {
+  if (!students || !students.length) {
+    alert('No students found in this group.');
+    return;
+  }
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library is not available. Please refresh the page and try again.');
+    return;
+  }
+
+  const zip = new JSZip();
+  const sorted = collectStudentsFromSection_(students);
+  const original = document.title;
+
+  try {
+    document.title = 'Generating TALAAN IDs...';
+    for (let i = 0; i < sorted.length; i++) {
+      const student = sorted[i];
+      const dataUrl = await buildStudentIdPng_(student);
+      const base64 = dataUrl.split(',')[1];
+      zip.file(getStudentIdSafeFileName_(student), base64, {base64:true});
+      if (progressLabel) progressLabel.textContent = 'Generating ' + (i+1) + ' of ' + sorted.length + ' IDs…';
+      await new Promise(function(resolve){ setTimeout(resolve, 0); });
+    }
+
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = zipName + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  } catch (error) {
+    alert('Unable to create ZIP: ' + (error.message || error));
+  } finally {
+    document.title = original;
+    if (progressLabel) progressLabel.textContent = '';
+  }
+}
+
+async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
+  if (!yearGroup) return;
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library is not available. Please refresh the page and try again.');
+    return;
+  }
+
+  const zip = new JSZip();
+  let count = 0;
+  const original = document.title;
+
+  try {
+    document.title = 'Generating TALAAN IDs...';
+    const courseNames = getSortedCourseNamesClient_(yearGroup.courses);
+    for (let ci = 0; ci < courseNames.length; ci++) {
+      const courseName = courseNames[ci];
+      const course = yearGroup.courses[courseName];
+      const courseFolder = zip.folder(courseName);
+      const sections = Object.keys(course.sections).sort(function(a,b){ return a.localeCompare(b,undefined,{numeric:true}); });
+
+      for (let si = 0; si < sections.length; si++) {
+        const section = sections[si];
+        const sectionFolder = courseFolder.folder('Section_' + section.replace(/[^a-z0-9_-]+/gi,'_'));
+        const students = collectStudentsFromSection_(course.sections[section]);
+        for (let i = 0; i < students.length; i++) {
+          const dataUrl = await buildStudentIdPng_(students[i]);
+          sectionFolder.file(getStudentIdSafeFileName_(students[i]), dataUrl.split(',')[1], {base64:true});
+          count++;
+          if (progressLabel) progressLabel.textContent = 'Generating ' + count + ' IDs…';
+          await new Promise(function(resolve){ setTimeout(resolve,0); });
+        }
+      }
+    }
+
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'TALAAN_IDs_' + yearLabel.replace(/[^a-z0-9]+/gi,'_') + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  } catch (error) {
+    alert('Unable to create year ZIP: ' + (error.message || error));
+  } finally {
+    document.title = original;
+    if (progressLabel) progressLabel.textContent = '';
+  }
+}
+
 async function showStudentDirectory_() {
   const session = currentSession_();
   if (session.role !== 'Secretary') {
@@ -4718,28 +5357,87 @@ async function showStudentDirectory_() {
     const result = await apiRequest('studentdirectory');
     if (!result || result.success !== true) throw new Error(result?.error || 'Student directory could not be loaded.');
 
-    let html = '<div class="attendance-card"><h2 class="section-heading">🪪 Student TALAAN IDs</h2>' +
-      '<p class="section-description">Secretary-only directory. Use these official IDs when distributing student account credentials.</p>';
+    const students = (result.students || []).filter(function(s){ return s && s.name; });
+    window.talaanStudentDirectoryData = students;
 
-    if (!result.students.length) {
-      html += '<div class="status">No registered students found. Run <strong>generateTalaanStudentIds()</strong> in Apps Script first.</div></div>';
-      setPage_(html);
+    if (!students.length) {
+      setPage_('<div class="attendance-card"><h2 class="section-heading">🪪 Student TALAAN IDs</h2><div class="status">No registered students found. Run <strong>generateTalaanStudentIds()</strong> in Apps Script first.</div></div>');
       return;
     }
 
-    html += '<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Section</th><th>Year</th><th>TALAAN ID</th><th>Account</th><th>Warning</th></tr></thead><tbody>';
-    result.students.forEach(function(s) {
-      const account = s.accountCreated ? 'Created' : 'Not yet created';
-      const warning = s.warning ? s.warningLevel : 'NO WARNING';
-      html += '<tr><td><strong>' + escapeHtml(s.name) + '</strong></td>' +
-        '<td>' + escapeHtml(s.section) + '</td>' +
-        '<td>' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</td>' +
-        '<td><strong style="letter-spacing:1px">' + escapeHtml(s.studentId) + '</strong></td>' +
-        '<td>' + escapeHtml(account) + '</td>' +
-        '<td>' + escapeHtml(warning) + '</td></tr>';
+    const grouped = groupStudentDirectory_(students);
+    let html = '<div class="attendance-card">' +
+      '<h2 class="section-heading">🪪 Student TALAAN IDs</h2>' +
+      '<p class="section-description">Browse by year level, course, and section. View or download an individual PNG, or download a ZIP containing the collated IDs for a section, course, or whole year.</p>' +
+      '<div class="talaan-id-toolbar"><div class="left"><div class="title">Official TALAAN Student IDs</div><div class="hint">QR value = the student\'s TALAAN ID. This is the same ID shown in the student profile.</div></div><div class="talaan-id-actions"><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=true;});">Expand All</button><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=false;});">Collapse All</button></div></div>';
+
+    ['1','2','3','4'].forEach(function(year) {
+      const yearGroup = grouped[year];
+      const courseNames = getSortedCourseNamesClient_(yearGroup.courses);
+      const total = courseNames.reduce(function(sum,c){
+        return sum + Object.keys(yearGroup.courses[c].sections).reduce(function(s,sec){ return s + yearGroup.courses[c].sections[sec].length; },0);
+      },0);
+
+      html += '<details class="talaan-id-year" open>' +
+        '<summary><div class="talaan-id-summary-row"><span>' + escapeHtml(getYearLabelClient_(year)) + '</span><span class="talaan-id-summary-meta">' + total + ' student' + (total === 1 ? '' : 's') + '</span></div></summary>' +
+        '<div class="talaan-id-year-body">' +
+          '<div class="talaan-id-actions" style="margin:12px 0 8px"><button class="talaan-id-action" onclick="downloadStudentIdYearZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '], ' + JSON.stringify(getYearLabelClient_(year)) + ', this.nextElementSibling)">Download ' + escapeHtml(getYearLabelClient_(year)) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
+
+      courseNames.forEach(function(courseName) {
+        const course = yearGroup.courses[courseName];
+        const sections = Object.keys(course.sections).sort(function(a,b){ return a.localeCompare(b,undefined,{numeric:true}); });
+        const courseStudents = [];
+        sections.forEach(function(sec){ courseStudents.push.apply(courseStudents, course.sections[sec]); });
+
+        html += '<details class="talaan-id-course" open>' +
+          '<summary><div class="talaan-id-summary-row"><span>' + escapeHtml(courseName) + '</span><span class="talaan-id-summary-meta">' + courseStudents.length + ' student' + (courseStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
+          '<div class="talaan-id-course-body">' +
+            '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
+
+        sections.forEach(function(section) {
+          const sectionStudents = collectStudentsFromSection_(course.sections[section]);
+          html += '<details class="talaan-id-section">' +
+            '<summary><div class="talaan-id-summary-row"><span>Section ' + escapeHtml(section) + '</span><span class="talaan-id-summary-meta">' + sectionStudents.length + ' student' + (sectionStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
+            '<div class="talaan-id-section-body">' +
+              '<div class="talaan-id-actions" style="margin:6px 0"><button class="talaan-id-action secondary" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].sections[' + JSON.stringify(section) + '], ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_Section_' + section) + ', this.nextElementSibling)">Download Section ZIP</button><span class="talaan-id-summary-meta"></span></div>';
+
+          sectionStudents.forEach(function(student) {
+            const idx = students.indexOf(student);
+            const account = student.accountCreated ? 'Account created' : 'No account yet';
+            html += '<div class="talaan-id-student">' +
+              '<div><div class="talaan-id-student-name">' + escapeHtml(student.name) + '</div>' +
+              '<div class="talaan-id-student-meta">' + escapeHtml(student.studentId || 'NO TALAAN ID') + ' • ' + escapeHtml(section) + ' • ' + escapeHtml(account) + '</div></div>' +
+              '<div class="talaan-id-student-actions">' +
+                '<button class="secondary" onclick="openStudentIdPreview_(' + idx + ')">View ID</button>' +
+                '<button onclick="downloadStudentIdPng_(' + idx + ')">Download PNG</button>' +
+              '</div>' +
+            '</div>';
+          });
+
+          html += '</div></details>';
+        });
+
+        html += '</div></details>';
+      });
+
+      html += '</div></details>';
     });
-    html += '</tbody></table></div></div>';
+
+    html += '<div id="talaanIdProgress" class="status" style="min-height:18px"></div></div>';
     setPage_(html);
+
+    // Store convenient grouped references after rendering.
+    Object.keys(grouped).forEach(function(year) {
+      const courses = grouped[year].courses;
+      Object.keys(courses).forEach(function(courseName) {
+        const allStudents = [];
+        Object.keys(courses[courseName].sections).forEach(function(section) {
+          allStudents.push.apply(allStudents, courses[courseName].sections[section]);
+        });
+        courses[courseName].allStudents = allStudents;
+      });
+    });
+    window.talaanStudentDirectoryGroups = grouped;
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
@@ -4859,23 +5557,35 @@ async function showStudentProfile_() {
     }
     html += '</div></div>';
 
-    html += '<div class="talaan-profile-card"><h3 class="section-heading">🪪 My TALAAN ID</h3><div class="talaan-profile-id">' + escapeHtml(p.studentId) + '</div><p class="section-description">Use this ID only for your TALAAN account.</p><div id="studentProfileQr" class="talaan-qr-box"></div><div style="text-align:center;font-weight:900;color:#17266b;margin-top:5px">' + escapeHtml(p.name) + '</div><div style="text-align:center;color:#718096;font-size:12px">' + escapeHtml(p.section) + '</div></div></div>';
+    html += '<div class="talaan-profile-card">' +
+      '<h3 class="section-heading">🪪 My TALAAN ID</h3>' +
+      '<p class="section-description">Your official TALAAN student ID. The QR code contains your TALAAN ID.</p>' +
+      '<div class="talaan-id-profile-wrap"><div id="studentProfileIdCard" class="talaan-id-profile-card"></div></div>' +
+      '<button class="primary-button" style="margin-top:14px" onclick="downloadMyProfileId_()">Download My TALAAN ID PNG</button>' +
+      '</div></div>';
 
     setPage_(html);
-    await renderStudentQr_(p);
-  } catch (error) { setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>'); }
+    window.talaanCurrentProfileStudent_ = p;
+    await renderStudentIdCard_(p, 'studentProfileIdCard');
+  } catch (error) {
+    setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
+  }
 }
 
-async function renderStudentQr_(profile) {
-  const target = document.getElementById('studentProfileQr');
-  if (!target || typeof QRCode === 'undefined') return;
-  target.innerHTML = '';
-  new QRCode(target, {
-    text: profile.studentId,
-    width: 190,
-    height: 190,
-    correctLevel: QRCode.CorrectLevel.M
-  });
+async function downloadMyProfileId_() {
+  const p = window.talaanCurrentProfileStudent_;
+  if (!p) return;
+  try {
+    const dataUrl = await buildStudentIdPng_(p);
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = getStudentIdSafeFileName_(p);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (error) {
+    alert('Unable to generate your TALAAN ID: ' + (error.message || error));
+  }
 }
 
 function showSettings() {
@@ -4984,19 +5694,11 @@ function renderHeaderLogo_() {
   topbar.insertBefore(left,topbar.firstChild);
 }
 
-function hideTalaanBootScreen_(){
-  const boot=document.getElementById('talaanBootScreen');
-  if(boot) boot.classList.add('talaan-boot-hide');
-}
-
 /* =====================================================
    REFRESH-PERSISTENCE INITIALIZER
    ===================================================== */
 
 window.addEventListener('DOMContentLoaded', function(){
-  const bootLogo=document.getElementById('talaanBootLogo');
-  if(bootLogo) bootLogo.src=TALAAN_LOGO_DATA;
-
   injectTalaanBranding_();
   ensureHamburger_();
   renderHeaderLogo_();
@@ -5012,25 +5714,22 @@ window.addEventListener('DOMContentLoaded', function(){
   const stored=getStoredTalaanSession_();
   if(!stored){
     localStorage.removeItem('talaanSession');
-    hideTalaanBootScreen_();
     return;
   }
 
-  // Keep the boot screen over the UI while the saved session is restored.
   talaanSession=stored;
   currentRole=stored.session.role;
   secretaryCodeSession=stored.session.code||'';
 
+  // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
     openDashboard(currentRole, stored.session);
-    hideTalaanBootScreen_();
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
     document.getElementById('appScreen')?.classList.add('hidden');
     document.getElementById('welcomeScreen')?.classList.remove('hidden');
-    hideTalaanBootScreen_();
   });
 });
 
