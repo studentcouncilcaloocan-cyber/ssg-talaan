@@ -5346,7 +5346,7 @@ async function buildStudentIdPng_(student) {
   ctx.font = '900 55px Arial, sans-serif';
   ctx.fillText(String(student.studentId), width/2, 350);
 
-  const qrData = await getQrDataUrl_(student.studentId, 330);
+  const qrData = await getQrDataUrl_(student.studentId, 500);
   const qrImg = await new Promise(function(resolve,reject) {
     const img = new Image();
     img.onload = function(){ resolve(img); };
@@ -5354,9 +5354,9 @@ async function buildStudentIdPng_(student) {
     img.src = qrData;
   });
 
-  const qrSize = 330;
+  const qrSize = 500;
   const qrX = (width-qrSize)/2;
-  const qrY = 390;
+  const qrY = 365;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(qrX-18,qrY-18,qrSize+36,qrSize+36);
   ctx.drawImage(qrImg,qrX,qrY,qrSize,qrSize);
@@ -5371,26 +5371,26 @@ async function buildStudentIdPng_(student) {
     if (ctx.measureText(name).width <= maxNameWidth) break;
     nameFont -= 2;
   }
-  ctx.fillText(name, width/2, 825);
+  ctx.fillText(name, width/2, 915);
 
   ctx.fillStyle = '#53627a';
   ctx.font = '800 31px Arial, sans-serif';
-  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 885);
+  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 960);
 
   ctx.fillStyle = '#718096';
   ctx.font = '700 20px Arial, sans-serif';
-  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 925);
+  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 995);
 
   ctx.strokeStyle = '#d7dee9';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(155,970);
-  ctx.lineTo(745,970);
+  ctx.moveTo(155,1030);
+  ctx.lineTo(745,1030);
   ctx.stroke();
 
   ctx.fillStyle = '#718096';
   ctx.font = '600 18px Arial, sans-serif';
-  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1015);
+  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1075);
 
   return canvas.toDataURL('image/png');
 }
