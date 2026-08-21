@@ -736,6 +736,12 @@ th {
   background: black;
 }
 
+#reader video {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
 .result {
   display: none;
   margin-top: 15px;
@@ -1198,13 +1204,6 @@ th {
    GOOGLE APPS SCRIPT BRIDGE
 ===================================================== */
 
-/*
- * IMPORTANT:
- * This INDEX.HTML is hosted on GitHub/Netlify, so
- * google.script.run is NOT available here.
- * Put your deployed Apps Script Web App URL below.
- * It must end in /exec.
- */
 const API_URL =
   'https://script.google.com/a/macros/laverdad.edu.ph/s/AKfycbzleAsY0Gc8MJuIcgE11cDDkZCrOag5BQAq5ZjBcclBxGAp9rTF_XtNTptNlqQhZj1wTQ/exec';
 
@@ -1214,85 +1213,139 @@ let secretaryCodeSession = '';
 let scanner = null;
 let scanning = false;
 let processing = false;
+let scannerRestartTimer = null;
+
 
 function apiRequest(action, params = {}) {
 
   return new Promise(function(resolve, reject) {
 
     if (!API_URL || API_URL.indexOf('PASTE_YOUR_') === 0) {
+
       reject(new Error(
         'Apps Script Web App URL is not configured in INDEX.HTML.'
       ));
+
       return;
+
     }
+
 
     const callbackName =
       '__talaanCallback_' +
       Date.now() + '_' +
       Math.random().toString(36).slice(2);
 
+
     const script =
       document.createElement('script');
+
 
     const query =
       new URLSearchParams();
 
+
     query.set('action', action);
     query.set('callback', callbackName);
 
-    Object.keys(params || {}).forEach(function(key) {
-      const value = params[key];
 
-      if (value !== undefined && value !== null) {
-        query.set(key, String(value));
+    Object.keys(params || {}).forEach(function(key) {
+
+      const value =
+        params[key];
+
+      if (
+        value !== undefined &&
+        value !== null
+      ) {
+
+        query.set(
+          key,
+          String(value)
+        );
+
       }
+
     });
+
 
     let finished = false;
 
+
     const cleanup = function() {
+
       finished = true;
+
       try {
         delete window[callbackName];
-      } catch (e) {
+      }
+
+      catch (e) {
         window[callbackName] = undefined;
       }
+
+
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
+
     };
 
-    const timer = setTimeout(function() {
-      if (finished) return;
-      cleanup();
-      reject(new Error(
-        'Apps Script API timed out. Check the Web App deployment and URL.'
-      ));
-    }, 30000);
 
-    window[callbackName] = function(data) {
-      if (finished) return;
-      clearTimeout(timer);
-      cleanup();
-      resolve(data);
-    };
+    const timer =
+      setTimeout(function() {
 
-    script.onerror = function() {
-      if (finished) return;
-      clearTimeout(timer);
-      cleanup();
-      reject(new Error(
-        'Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'
-      ));
-    };
+        if (finished) return;
+
+        cleanup();
+
+        reject(new Error(
+          'Apps Script API timed out. Check the Web App deployment and URL.'
+        ));
+
+      }, 30000);
+
+
+    window[callbackName] =
+      function(data) {
+
+        if (finished) return;
+
+        clearTimeout(timer);
+
+        cleanup();
+
+        resolve(data);
+
+      };
+
+
+    script.onerror =
+      function() {
+
+        if (finished) return;
+
+        clearTimeout(timer);
+
+        cleanup();
+
+        reject(new Error(
+          'Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'
+        ));
+
+      };
+
 
     script.src =
       API_URL.replace(/\/$/, '') +
       '?' +
       query.toString();
 
+
     document.head.appendChild(script);
+
   });
+
 }
 
 
@@ -1319,7 +1372,9 @@ function openSecretaryLogin() {
 
 function backToWelcome() {
 
-  stopScanner();
+  clearTimeout(scannerRestartTimer);
+
+  stopScanner(false);
 
   document
     .getElementById('loginScreen')
@@ -1359,6 +1414,7 @@ async function secretaryLogin() {
       )
       .value
       .trim();
+
 
   const status =
     document
@@ -1439,9 +1495,7 @@ async function secretaryLogin() {
    OPEN DASHBOARD
 ===================================================== */
 
-async function openDashboard(
-  role
-) {
+async function openDashboard(role) {
 
   currentRole =
     role;
@@ -1472,9 +1526,7 @@ async function openDashboard(
     );
 
 
-  if (
-    role === 'Secretary'
-  ) {
+  if (role === 'Secretary') {
 
     secretaryNav
       .classList.remove('hidden');
@@ -1582,34 +1634,44 @@ function showDashboardSheet() {
     'navDashboard'
   );
 
+
   const content =
     document.getElementById(
       'dashboardContent'
     );
 
+
   if (!content) {
     return;
   }
+
 
   if (!dashboardData) {
     return;
   }
 
+
   const d =
     dashboardData.dashboard || {};
+
 
   const selectedDate =
     dashboardData.selectedDate || '';
 
+
   const selectedEvent =
     (dashboardData.events || []).find(
       function(event) {
+
         return normalizeDateKey(event.date) ===
           normalizeDateKey(selectedDate);
+
       }
     ) || {};
 
+
   let eventOptions = '';
+
 
   (dashboardData.events || [])
     .slice()
@@ -1623,7 +1685,9 @@ function showDashboardSheet() {
             ? 'selected'
             : '';
 
+
         eventOptions += `
+
           <option
             value="${escapeAttribute(event.date)}"
             ${selected}
@@ -1631,16 +1695,19 @@ function showDashboardSheet() {
             ${escapeHtml(event.date)}
             — ${escapeHtml(event.event)}
           </option>
+
         `;
 
       }
     );
+
 
   const highest =
     d.highestAttendance &&
     d.highestAttendance.label
       ? d.highestAttendance.label
       : '—';
+
 
   let html = `
 
@@ -1683,47 +1750,96 @@ function showDashboardSheet() {
 
   `;
 
+
   if (d.notYetHeld) {
+
     html += `
+
       <div class="not-held">
-        <div class="not-held-icon">⚪</div>
-        <strong>EVENT NOT YET HELD</strong>
+
+        <div class="not-held-icon">
+          ⚪
+        </div>
+
+        <strong>
+          EVENT NOT YET HELD
+        </strong>
+
         <br>
+
         Attendance for this event has not started yet.
+
       </div>
+
     `;
+
   }
+
 
   html += `
 
     <div class="stats-grid">
 
       <div class="stat-card">
-        <div class="stat-label">TOTAL STUDENTS</div>
-        <div class="stat-number">${d.totalStudents || 0}</div>
+
+        <div class="stat-label">
+          TOTAL STUDENTS
+        </div>
+
+        <div class="stat-number">
+          ${d.totalStudents || 0}
+        </div>
+
       </div>
 
+
       <div class="stat-card">
-        <div class="stat-label">PRESENT</div>
-        <div class="stat-number">${d.present || 0}</div>
+
+        <div class="stat-label">
+          PRESENT
+        </div>
+
+        <div class="stat-number">
+          ${d.present || 0}
+        </div>
+
         <div class="stat-sub">
           ${Number(d.attendanceRate || 0).toFixed(2)}%
         </div>
+
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">ABSENT</div>
-        <div class="stat-number">${d.absent || 0}</div>
-      </div>
 
       <div class="stat-card">
-        <div class="stat-label">HIGHEST ATTENDANCE</div>
-        <div class="stat-number" style="font-size:24px;">
+
+        <div class="stat-label">
+          ABSENT
+        </div>
+
+        <div class="stat-number">
+          ${d.absent || 0}
+        </div>
+
+      </div>
+
+
+      <div class="stat-card">
+
+        <div class="stat-label">
+          HIGHEST ATTENDANCE
+        </div>
+
+        <div
+          class="stat-number"
+          style="font-size:24px;"
+        >
           ${escapeHtml(highest)}
         </div>
+
       </div>
 
     </div>
+
 
     <div class="dashboard-section">
 
@@ -1735,29 +1851,45 @@ function showDashboardSheet() {
 
   `;
 
+
   const yearData =
     normalizeDashboardYears(
       d.years
     );
 
+
   yearData.forEach(
     function(year) {
-      html += renderYearCard(year);
+
+      html +=
+        renderYearCard(year);
+
     }
   );
 
+
   html += `
+
       </div>
+
     </div>
+
   `;
 
-  content.innerHTML = html;
+
+  content.innerHTML =
+    html;
+
 }
 
 
-async function changeDashboardDate(selectedDate) {
+async function changeDashboardDate(
+  selectedDate
+) {
 
-  await loadDashboard(selectedDate || '');
+  await loadDashboard(
+    selectedDate || ''
+  );
 
 }
 
@@ -1772,10 +1904,13 @@ function normalizeDashboardYears(years) {
 
     return years
       .filter(function(item) {
+
         return item &&
           typeof item === 'object';
+
       })
       .sort(function(a, b) {
+
         return Number(
           a.yearLevel ||
           a.year ||
@@ -1786,9 +1921,11 @@ function normalizeDashboardYears(years) {
           b.year ||
           0
         );
+
       });
 
   }
+
 
   if (
     years &&
@@ -1802,6 +1939,7 @@ function normalizeDashboardYears(years) {
           years[level] ||
           years[Number(level)] ||
           {};
+
 
         return {
 
@@ -1865,6 +2003,7 @@ function normalizeDashboardYears(years) {
 
   }
 
+
   return [];
 
 }
@@ -1879,12 +2018,14 @@ function renderYearCard(year) {
       ''
     );
 
+
   const rate =
     Number(
       year.rate ??
       year.percentage ??
       0
     );
+
 
   const label =
     level === '1'
@@ -1895,7 +2036,9 @@ function renderYearCard(year) {
           ? '3RD YEAR'
           : '4TH YEAR';
 
+
   return `
+
     <div class="year-card">
 
       <div class="year-title">
@@ -1907,14 +2050,18 @@ function renderYearCard(year) {
       </div>
 
       <div class="progress">
+
         <div
           class="progress-fill"
           style="width:${Math.min(100, rate)}%"
         ></div>
+
       </div>
 
     </div>
+
   `;
+
 }
 
 
@@ -2082,6 +2229,7 @@ function createAttendanceTable(
               cell || ''
             ).trim();
 
+
           let className =
             '';
 
@@ -2110,6 +2258,7 @@ function createAttendanceTable(
 
             const header =
               data[0][c];
+
 
             const date =
               parseClientDate(
@@ -2240,6 +2389,7 @@ function showSettings() {
       ]
     );
 
+
   const dateIndex =
     findHeader(
       headers,
@@ -2248,6 +2398,7 @@ function showSettings() {
         'EVENT DATE'
       ]
     );
+
 
   const cutoffIndex =
     findHeader(
@@ -2258,6 +2409,7 @@ function showSettings() {
         'CUT OFF'
       ]
     );
+
 
   const statusIndex =
     findHeader(
@@ -2314,15 +2466,18 @@ function showSettings() {
         ? data[r][eventIndex]
         : '';
 
+
     const date =
       dateIndex >= 0
         ? data[r][dateIndex]
         : '';
 
+
     const cutoff =
       cutoffIndex >= 0
         ? data[r][cutoffIndex]
         : '';
+
 
     const status =
       statusIndex >= 0
@@ -2430,8 +2585,11 @@ function showSettings() {
 
 
   html += `
+
       </div>
+
     </div>
+
   `;
 
 
@@ -2452,7 +2610,9 @@ async function saveSettingRow(
   if (
     currentRole !== 'Secretary'
   ) {
+
     return;
+
   }
 
 
@@ -2576,7 +2736,9 @@ async function addEvent() {
   if (
     currentRole !== 'Secretary'
   ) {
+
     return;
+
   }
 
 
@@ -2588,6 +2750,7 @@ async function addEvent() {
       .value
       .trim();
 
+
   const date =
     document
       .getElementById(
@@ -2596,6 +2759,7 @@ async function addEvent() {
       .value
       .trim();
 
+
   const cutoff =
     document
       .getElementById(
@@ -2603,6 +2767,7 @@ async function addEvent() {
       )
       .value
       .trim();
+
 
   const status =
     document
@@ -2677,11 +2842,13 @@ async function addEvent() {
       )
       .value = '';
 
+
     document
       .getElementById(
         'newDate'
       )
       .value = '';
+
 
     document
       .getElementById(
@@ -2738,18 +2905,35 @@ async function refreshDashboardData() {
 
 /* =====================================================
    QR SCANNER
+   AUTOMATIC CAMERA START
 ===================================================== */
 
 function openScanner() {
 
-  if (currentRole !== 'Secretary') {
+  if (
+    currentRole !== 'Secretary'
+  ) {
+
     return;
+
   }
 
-  setActiveNav('navScanner');
+
+  clearTimeout(
+    scannerRestartTimer
+  );
+
+
+  setActiveNav(
+    'navScanner'
+  );
+
 
   const content =
-    document.getElementById('dashboardContent');
+    document.getElementById(
+      'dashboardContent'
+    );
+
 
   content.innerHTML = `
 
@@ -2760,10 +2944,12 @@ function openScanner() {
       </h2>
 
       <p class="section-description">
-        Secretary-only scanner. Allow camera access when prompted.
+        Secretary-only scanner. The camera will open automatically.
       </p>
 
+
       <div id="reader"></div>
+
 
       <button
         id="startScannerButton"
@@ -2773,6 +2959,7 @@ function openScanner() {
         📷 START QR SCANNER
       </button>
 
+
       <button
         class="secondary-button"
         onclick="stopScanner()"
@@ -2780,12 +2967,14 @@ function openScanner() {
         CLEAR SCANNER
       </button>
 
+
       <div
         id="scanLoading"
         class="status"
       >
-        Ready. Tap START QR SCANNER.
+        📷 Starting camera automatically...
       </div>
+
 
       <div
         id="scanResult"
@@ -2795,197 +2984,379 @@ function openScanner() {
     </div>
 
   `;
+
+
+  /*
+   * Give the browser a short moment to render #reader
+   * before requesting camera permission.
+   */
+  scannerRestartTimer =
+    setTimeout(
+      function() {
+
+        if (
+          currentRole === 'Secretary'
+        ) {
+
+          startScanner();
+
+        }
+
+      },
+      300
+    );
+
 }
 
 
+/* =====================================================
+   START SCANNER
+===================================================== */
+
 async function startScanner() {
 
-  if (processing || scanning) {
+  if (
+    processing ||
+    scanning
+  ) {
+
     return;
+
   }
 
+
   const reader =
-    document.getElementById('reader');
+    document.getElementById(
+      'reader'
+    );
+
 
   const loading =
-    document.getElementById('scanLoading');
+    document.getElementById(
+      'scanLoading'
+    );
+
 
   const startButton =
-    document.getElementById('startScannerButton');
+    document.getElementById(
+      'startScannerButton'
+    );
+
 
   if (!reader) {
     return;
   }
 
+
   try {
 
     if (startButton) {
-      startButton.disabled = true;
+
+      startButton.disabled =
+        true;
+
       startButton.textContent =
         '📷 CAMERA STARTING...';
+
     }
+
 
     if (loading) {
+
       loading.textContent =
         'Requesting camera access...';
+
     }
 
-    scanner =
-      new Html5Qrcode('reader');
 
-    scanning = true;
+    /*
+     * Remove an old scanner instance first.
+     */
+    if (scanner) {
+
+      try {
+        await scanner.clear();
+      }
+
+      catch (e) {}
+
+      scanner = null;
+
+    }
+
+
+    scanner =
+      new Html5Qrcode(
+        'reader'
+      );
+
 
     await scanner.start(
 
       {
-        facingMode: 'environment'
+        facingMode:
+          'environment'
       },
 
       {
         fps: 10,
+
         qrbox: {
           width: 250,
           height: 250
         },
+
         aspectRatio: 1.0
+
       },
 
       function(decodedText) {
 
-        onScanSuccess(decodedText);
+        onScanSuccess(
+          decodedText
+        );
 
       },
 
       function(errorMessage) {
 
-        // Normal while searching for a QR code.
-        // Do not show an error for every failed frame.
+        /*
+         * Normal while searching.
+         * Do not show frame-by-frame errors.
+         */
 
       }
 
     );
 
+
+    scanning =
+      true;
+
+
     if (loading) {
+
       loading.textContent =
         '📷 Camera active. Point the camera at the student QR code.';
+
     }
 
+
     if (startButton) {
+
       startButton.textContent =
         '📷 SCANNING...';
+
     }
 
   }
 
   catch (error) {
 
-    scanning = false;
+    scanning =
+      false;
+
 
     if (scanner) {
+
       try {
         await scanner.clear();
-      } catch (e) {}
+      }
+
+      catch (e) {}
+
       scanner = null;
+
     }
 
+
     if (startButton) {
-      startButton.disabled = false;
+
+      startButton.disabled =
+        false;
+
       startButton.textContent =
         '📷 START QR SCANNER';
+
     }
+
 
     let message =
       'Unable to open the camera.';
+
 
     if (
       error &&
       error.message
     ) {
+
       message +=
         ' ' +
         error.message;
+
     }
+
 
     if (loading) {
+
       loading.textContent =
         message;
+
     }
 
-    showScanError(message);
+
+    showScanError(
+      message
+    );
 
   }
 
 }
 
 
-async function stopScanner() {
+/* =====================================================
+   STOP SCANNER
+===================================================== */
 
-  processing = false;
+async function stopScanner(
+  showStoppedMessage = true
+) {
+
+  clearTimeout(
+    scannerRestartTimer
+  );
+
+
+  const wasProcessing =
+    processing;
+
 
   if (scanner) {
 
     try {
 
       if (scanning) {
+
         await scanner.stop();
+
       }
 
     }
 
     catch (error) {
-      console.log(error);
+
+      console.log(
+        'Scanner stop:',
+        error
+      );
+
     }
+
 
     try {
+
       await scanner.clear();
+
     }
+
     catch (error) {
-      console.log(error);
+
+      console.log(
+        'Scanner clear:',
+        error
+      );
+
     }
 
   }
 
-  scanner = null;
-  scanning = false;
+
+  scanner =
+    null;
+
+  scanning =
+    false;
+
+
+  /*
+   * IMPORTANT:
+   * Do not reset processing here.
+   * onScanSuccess() needs the processing lock while
+   * the QR is being sent to Apps Script.
+   */
+  if (!wasProcessing) {
+
+    processing =
+      false;
+
+  }
+
 
   const loading =
-    document.getElementById('scanLoading');
+    document.getElementById(
+      'scanLoading'
+    );
+
 
   const startButton =
-    document.getElementById('startScannerButton');
+    document.getElementById(
+      'startScannerButton'
+    );
 
-  if (loading) {
+
+  if (
+    showStoppedMessage &&
+    loading
+  ) {
+
     loading.textContent =
-      'Scanner stopped. Tap START QR SCANNER to scan again.';
+      'Scanner stopped.';
+
   }
 
+
   if (startButton) {
-    startButton.disabled = false;
+
+    startButton.disabled =
+      false;
+
     startButton.textContent =
       '📷 START QR SCANNER';
+
   }
 
 }
 
 
 /* =====================================================
-   QR SUCCESS
+   RESTART SCANNER
 ===================================================== */
 
-/* =====================================================
-   QR SUCCESS
-===================================================== */
+function restartScannerAfterResult() {
 
-async function onScanSuccess(
-  decodedText
-) {
+  clearTimeout(
+    scannerRestartTimer
+  );
 
-  if (processing) {
+
+  if (
+    currentRole !== 'Secretary'
+  ) {
+
     return;
+
   }
 
 
-  processing = true;
+  const reader =
+    document.getElementById(
+      'reader'
+    );
+
+
+  if (!reader) {
+    return;
+  }
 
 
   const loading =
@@ -2997,12 +3368,73 @@ async function onScanSuccess(
   if (loading) {
 
     loading.textContent =
-      'QR detected. Processing...';
+      '📷 Ready. Starting camera again...';
 
   }
 
 
-  await stopScanner();
+  scannerRestartTimer =
+    setTimeout(
+      function() {
+
+        if (
+          currentRole === 'Secretary' &&
+          document.getElementById('reader')
+        ) {
+
+          startScanner();
+
+        }
+
+      },
+      1500
+    );
+
+}
+
+
+/* =====================================================
+   QR SUCCESS
+===================================================== */
+
+async function onScanSuccess(
+  decodedText
+) {
+
+  if (
+    processing
+  ) {
+
+    return;
+
+  }
+
+
+  processing =
+    true;
+
+
+  const loading =
+    document.getElementById(
+      'scanLoading'
+    );
+
+
+  if (loading) {
+
+    loading.textContent =
+      '✅ QR detected. Processing attendance...';
+
+  }
+
+
+  /*
+   * Stop camera while Apps Script processes the record.
+   * processing remains TRUE.
+   */
+  await stopScanner(
+    false
+  );
 
 
   try {
@@ -3032,7 +3464,15 @@ async function onScanSuccess(
   }
 
 
-  processing = false;
+  processing =
+    false;
+
+
+  /*
+   * Automatically reopen camera after displaying
+   * the result.
+   */
+  restartScannerAfterResult();
 
 }
 
@@ -3258,6 +3698,10 @@ function displayResult(
 }
 
 
+/* =====================================================
+   SCAN ERROR
+===================================================== */
+
 function showScanError(
   message
 ) {
@@ -3275,6 +3719,7 @@ function showScanError(
 
   result.style.display =
     'block';
+
 
   result.className =
     'result error';
@@ -3403,7 +3848,9 @@ function parseClientDate(
       date.getTime()
     )
   ) {
+
     return null;
+
   }
 
 
