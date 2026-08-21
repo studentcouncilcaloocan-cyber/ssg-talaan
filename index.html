@@ -279,6 +279,20 @@ select:focus {
   color: #17266b;
 }
 
+.topbar-account {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+  min-width: 280px;
+}
+
+.topbar-account .talaan-top-search {
+  margin: 0;
+  width: min(520px, 100%);
+}
+
+
 .role-badge {
   background: #edf2ff;
   color: #17266b;
@@ -856,6 +870,15 @@ th {
     gap: 10px;
   }
 
+  .topbar-account {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .topbar-account .talaan-top-search {
+    width: 100%;
+  }
+
 }
 
 </style>
@@ -1081,16 +1104,12 @@ th {
         LVCC Caloocan
       </div>
 
-      <div class="talaan-top-search" id="talaanTopSearch">
-        <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-        <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
-      </div>
-
-      <div
-        id="roleBadge"
-        class="role-badge"
-      >
-        Guest
+      <div class="topbar-account">
+        <div class="talaan-top-search" id="talaanTopSearch">
+          <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+          <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+        </div>
+        <div id="roleBadge" class="role-badge">Guest</div>
       </div>
 
     </div>
@@ -4605,12 +4624,6 @@ function showDashboardSheet() {
     '<div class="talaan-summary-item"><strong>' + escapeHtml(highest?.label || '—') + (highest ? ' • ' + Number(highest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Highest attendance rate</span></div>' +
     '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
   '</div></div>';
-
-  if (role === 'Secretary' || role === 'Teacher' || role === 'Admin') {
-    html += '<div class="dashboard-section"><h3 class="dashboard-section-title">🔎 Search Student</h3>' +
-      '<div class="talaan-search-row"><input id="studentSearchInput" placeholder="Search student name..."><button class="primary-button" onclick="searchStudent_()">SEARCH</button></div>' +
-      '<div id="studentSearchResults"></div></div>';
-  }
 
   setPage_(html);
 }
