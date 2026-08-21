@@ -1,0 +1,3402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>SSG TALAAN</title>
+
+<script
+  src="https://unpkg.com/html5-qrcode"
+  type="text/javascript">
+</script>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+  background:
+    #eef3f9;
+  color:
+    #172b4d;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =====================================================
+   WELCOME
+===================================================== */
+
+.screen {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 25px;
+}
+
+.card {
+  width: 100%;
+  max-width: 700px;
+  background: white;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow:
+    0 15px 45px rgba(19,45,85,.12);
+}
+
+.welcome-card {
+  max-width: 680px;
+}
+
+.welcome-title {
+  font-size: 38px;
+  font-weight: 900;
+  text-align: center;
+  color: #17266b;
+}
+
+.welcome-subtitle {
+  text-align: center;
+  color: #718096;
+  margin: 8px 0 30px;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 18px;
+}
+
+.role-button {
+  border: 0;
+  border-radius: 20px;
+  padding: 32px 18px;
+  background: #f3f6fb;
+  color: #17266b;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 800;
+  transition: .2s;
+}
+
+.role-button:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 25px rgba(0,0,0,.12);
+}
+
+.role-icon {
+  display: block;
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+.login-box {
+  max-width: 450px;
+  margin: auto;
+}
+
+h1 {
+  margin: 0;
+  text-align: center;
+  color: #17266b;
+}
+
+.subtitle {
+  text-align: center;
+  color: #718096;
+  margin: 10px 0 28px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 13px 14px;
+  border:
+    1px solid #d7dee9;
+  border-radius: 11px;
+  font-size: 15px;
+  outline: none;
+  background: white;
+}
+
+input:focus,
+select:focus {
+  border-color: #315ca8;
+  box-shadow:
+    0 0 0 3px rgba(49,92,168,.10);
+}
+
+.primary-button,
+.secondary-button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #17266b;
+  color: white;
+}
+
+.secondary-button {
+  background: #e8edf4;
+  color: #24324a;
+}
+
+.status {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 11px;
+  background: #f3f6fa;
+  text-align: center;
+}
+
+
+/* =====================================================
+   APP
+===================================================== */
+
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+}
+
+.sidebar {
+  width: 245px;
+  background:
+    linear-gradient(
+      180deg,
+      #17266b,
+      #102050
+    );
+  color: white;
+  padding: 22px 15px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  font-size: 24px;
+  font-weight: 900;
+  padding: 10px 12px 5px;
+}
+
+.sidebar-subtitle {
+  font-size: 12px;
+  opacity: .7;
+  padding: 0 12px 22px;
+}
+
+.sidebar-section {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  opacity: .55;
+  padding: 13px 12px 7px;
+}
+
+.nav-button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: white;
+  text-align: left;
+  padding: 13px 14px;
+  border-radius: 11px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.nav-button:hover {
+  background: rgba(255,255,255,.10);
+}
+
+.nav-button.active {
+  background: rgba(255,255,255,.18);
+}
+
+.logout-button {
+  margin-top: 20px;
+}
+
+.main-content {
+  margin-left: 245px;
+  width: calc(100% - 245px);
+  padding: 24px;
+}
+
+.topbar {
+  background: white;
+  border-radius: 17px;
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow:
+    0 5px 22px rgba(20,43,75,.07);
+  margin-bottom: 18px;
+}
+
+.top-title {
+  font-size: 23px;
+  font-weight: 900;
+  color: #17266b;
+}
+
+.role-badge {
+  background: #edf2ff;
+  color: #17266b;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.content-card {
+  background: transparent;
+}
+
+
+/* =====================================================
+   DASHBOARD HERO
+===================================================== */
+
+.dashboard-header {
+  background:
+    linear-gradient(
+      135deg,
+      #17266b,
+      #285899
+    );
+  color: white;
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 18px;
+  box-shadow:
+    0 10px 30px rgba(23,38,107,.18);
+}
+
+.dashboard-header h2 {
+  margin: 0 0 5px;
+  font-size: 25px;
+}
+
+.dashboard-header p {
+  margin: 0;
+  opacity: .78;
+}
+
+.dashboard-controls {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.control {
+  flex: 1;
+  min-width: 220px;
+}
+
+.control label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.control select {
+  border: none;
+}
+
+.event-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 15px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.15);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dashboard-section {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 5px 20px rgba(20,43,75,.07);
+  margin-top: 18px;
+}
+
+.dashboard-section-title {
+  margin: 0 0 16px;
+  color: #17266b;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+
+/* =====================================================
+   STAT CARDS
+===================================================== */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4,1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 17px;
+  padding: 20px;
+  box-shadow:
+    0 5px 20px rgba(20,43,75,.07);
+}
+
+.stat-label {
+  color: #718096;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stat-number {
+  font-size: 30px;
+  font-weight: 900;
+  margin-top: 6px;
+  color: #17266b;
+}
+
+.stat-sub {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #718096;
+}
+
+
+/* =====================================================
+   YEAR CARDS
+===================================================== */
+
+.year-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4,1fr);
+  gap: 16px;
+}
+
+.year-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow:
+    0 5px 20px rgba(20,43,75,.07);
+}
+
+.year-title {
+  font-size: 20px;
+  font-weight: 900;
+  color: #17266b;
+  margin-bottom: 5px;
+}
+
+.year-summary {
+  color: #718096;
+  font-size: 12px;
+  margin-bottom: 15px;
+}
+
+.progress {
+  height: 9px;
+  background: #edf0f5;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #39a86b;
+  border-radius: 20px;
+}
+
+.section-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.section-table th,
+.section-table td {
+  padding: 9px 5px;
+  border-bottom: 1px solid #edf0f4;
+  font-size: 12px;
+}
+
+.section-table th {
+  color: #718096;
+  text-align: left;
+}
+
+.section-table td:last-child,
+.section-table th:last-child {
+  text-align: right;
+}
+
+
+/* =====================================================
+   NOT YET HELD
+===================================================== */
+
+.not-held {
+  background:
+    #f1f3f6;
+  border:
+    1px solid #dce1e8;
+  color:
+    #6b7280;
+  border-radius: 16px;
+  padding: 22px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.not-held-icon {
+  font-size: 32px;
+  margin-bottom: 5px;
+}
+
+
+/* =====================================================
+   ATTENDANCE TABLE
+===================================================== */
+
+.attendance-card {
+  background: white;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow:
+    0 5px 20px rgba(20,43,75,.07);
+  margin-bottom: 18px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 11px;
+  border: 1px solid #e0e5ec;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 700px;
+}
+
+th,
+td {
+  padding: 9px;
+  border-bottom: 1px solid #e6eaf0;
+  font-size: 12px;
+  text-align: left;
+}
+
+th {
+  background: #17266b;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.status-present {
+  background: #dcf5e6 !important;
+  color: #167344;
+  font-weight: 800;
+  text-align: center;
+}
+
+.status-absent {
+  background: #fde0e0 !important;
+  color: #a82222;
+  font-weight: 800;
+  text-align: center;
+}
+
+.status-future {
+  background: #e9edf2 !important;
+  color: #737b87;
+  font-weight: 700;
+  text-align: center;
+}
+
+.status-empty {
+  text-align: center;
+  color: #9aa3af;
+}
+
+
+/* =====================================================
+   SETTINGS
+===================================================== */
+
+.section-heading {
+  margin-bottom: 5px;
+  color: #17266b;
+}
+
+.section-description {
+  margin-top: 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.settings-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 15px 0;
+}
+
+.add-button {
+  border: none;
+  background: #17266b;
+  color: white;
+  padding: 12px 17px;
+  border-radius: 11px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.settings-list {
+  display: grid;
+  gap: 14px;
+}
+
+.setting-card {
+  background: white;
+  border-radius: 17px;
+  padding: 18px;
+  box-shadow:
+    0 5px 18px rgba(20,43,75,.06);
+}
+
+.setting-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 13px;
+}
+
+.setting-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #17266b;
+}
+
+.row-badge {
+  background: #edf2ff;
+  color: #315ca8;
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.setting-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(4,1fr);
+  gap: 10px;
+}
+
+.setting-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #718096;
+  margin-bottom: 5px;
+}
+
+.save-button {
+  background: #17266b;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,25,55,.55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  z-index: 100;
+}
+
+.modal-box {
+  background: white;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.2);
+}
+
+.modal-box h2 {
+  margin-top: 0;
+  color: #17266b;
+}
+
+.form-row {
+  margin-bottom: 12px;
+}
+
+.form-row label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #718096;
+  margin-bottom: 5px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.modal-actions button {
+  flex: 1;
+}
+
+
+/* =====================================================
+   CAMERA
+===================================================== */
+
+#reader {
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: black;
+}
+
+.result {
+  display: none;
+  margin-top: 15px;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.success {
+  display: block;
+  background: #e8f7ed;
+  border: 1px solid #9bd5ad;
+}
+
+.warning {
+  display: block;
+  background: #fff7df;
+  border: 1px solid #e5c86a;
+}
+
+.error {
+  display: block;
+  background: #fdeaea;
+  border: 1px solid #e0a0a0;
+}
+
+.student-name {
+  font-size: 21px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.detail {
+  margin: 5px 0;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 900px) {
+
+  .stats-grid {
+    grid-template-columns:
+      repeat(2,1fr);
+  }
+
+  .year-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-grid {
+    grid-template-columns:
+      repeat(2,1fr);
+  }
+
+}
+
+@media (max-width: 750px) {
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+
+  .app-layout {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 12px;
+  }
+
+  .sidebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .sidebar-brand,
+  .sidebar-subtitle {
+    width: 100%;
+  }
+
+  .sidebar-section {
+    display: none;
+  }
+
+  .nav-button {
+    width: auto;
+    margin-right: 5px;
+  }
+
+  .role-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setting-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================================
+     WELCOME
+===================================================== -->
+
+<section
+  id="welcomeScreen"
+  class="screen"
+>
+
+  <div class="card welcome-card">
+
+    <div class="welcome-title">
+      SSG TALAAN
+    </div>
+
+    <div class="welcome-subtitle">
+      LVCC Caloocan Student Attendance System
+    </div>
+
+    <div class="role-grid">
+
+      <button
+        class="role-button"
+        onclick="openSecretaryLogin()"
+      >
+        <span class="role-icon">🔐</span>
+        Secretary
+      </button>
+
+      <button
+        class="role-button"
+        onclick="openDashboard('Teacher/Student')"
+      >
+        <span class="role-icon">👥</span>
+        Teacher/Student
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     LOGIN
+===================================================== -->
+
+<section
+  id="loginScreen"
+  class="screen hidden"
+>
+
+  <div class="card login-box">
+
+    <h1>
+      Secretary Login
+    </h1>
+
+    <div class="subtitle">
+      Enter your authorized Secretary access code.
+    </div>
+
+    <input
+      id="secretaryCode"
+      type="password"
+      placeholder="Secretary Access Code"
+      autocomplete="off"
+    >
+
+    <button
+      class="primary-button"
+      onclick="secretaryLogin()"
+    >
+      🔐 LOGIN
+    </button>
+
+    <button
+      class="secondary-button"
+      onclick="backToWelcome()"
+    >
+      ← BACK
+    </button>
+
+    <div
+      id="loginStatus"
+      class="status"
+    >
+      Enter your access code.
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- =====================================================
+     APPLICATION
+===================================================== -->
+
+<section
+  id="appScreen"
+  class="app-layout hidden"
+>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-brand">
+      SSG TALAAN
+    </div>
+
+    <div class="sidebar-subtitle">
+      Student Attendance System
+    </div>
+
+    <div class="sidebar-section">
+      Main
+    </div>
+
+    <button
+      id="navDashboard"
+      class="nav-button active"
+      onclick="showDashboardSheet()"
+    >
+      📊 Dashboard
+    </button>
+
+    <div class="sidebar-section">
+      Attendance
+    </div>
+
+    <button
+      id="navAttendance1"
+      class="nav-button"
+      onclick="showAttendance('Attendance1')"
+    >
+      📋 1st Year
+    </button>
+
+    <button
+      id="navAttendance2"
+      class="nav-button"
+      onclick="showAttendance('Attendance2')"
+    >
+      📋 2nd Year
+    </button>
+
+    <button
+      id="navAttendance3"
+      class="nav-button"
+      onclick="showAttendance('Attendance3')"
+    >
+      📋 3rd Year
+    </button>
+
+    <button
+      id="navAttendance4"
+      class="nav-button"
+      onclick="showAttendance('Attendance4')"
+    >
+      📋 4th Year
+    </button>
+
+
+    <div
+      id="secretaryNavigation"
+      class="hidden"
+    >
+
+      <div class="sidebar-section">
+        Secretary
+      </div>
+
+      <button
+        id="navSettings"
+        class="nav-button"
+        onclick="showSettings()"
+      >
+        ⚙️ Event Settings
+      </button>
+
+      <button
+        id="navScanner"
+        class="nav-button"
+        onclick="openScanner()"
+      >
+        📷 QR Scanner
+      </button>
+
+    </div>
+
+
+    <button
+      class="nav-button logout-button"
+      onclick="backToWelcome()"
+    >
+      ← Log Out
+    </button>
+
+  </aside>
+
+
+  <main class="main-content">
+
+    <div class="topbar">
+
+      <div class="top-title">
+        LVCC Caloocan
+      </div>
+
+      <div
+        id="roleBadge"
+        class="role-badge"
+      >
+        Guest
+      </div>
+
+    </div>
+
+
+    <div
+      id="dashboardContent"
+      class="content-card"
+    ></div>
+
+  </main>
+
+</section>
+
+
+<!-- =====================================================
+     ADD EVENT MODAL
+===================================================== -->
+
+<div
+  id="addEventModal"
+  class="modal hidden"
+>
+
+  <div class="modal-box">
+
+    <h2>
+      ➕ Add New Event
+    </h2>
+
+    <div class="form-row">
+
+      <label>
+        Event Title
+      </label>
+
+      <input
+        id="newEvent"
+        placeholder="e.g. Flag Ceremony"
+      >
+
+    </div>
+
+    <div class="form-row">
+
+      <label>
+        Date
+      </label>
+
+      <input
+        id="newDate"
+        placeholder="e.g. August 24"
+      >
+
+    </div>
+
+    <div class="form-row">
+
+      <label>
+        Cut-off
+      </label>
+
+      <input
+        id="newCutoff"
+        placeholder="e.g. 7:30 AM"
+      >
+
+    </div>
+
+    <div class="form-row">
+
+      <label>
+        Status
+      </label>
+
+      <select id="newStatus">
+
+        <option value="Active">
+          Active
+        </option>
+
+        <option value="Scheduled">
+          Scheduled
+        </option>
+
+        <option value="Closed">
+          Closed
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="modal-actions">
+
+      <button
+        class="secondary-button"
+        onclick="closeAddEvent()"
+      >
+        CANCEL
+      </button>
+
+      <button
+        class="primary-button"
+        onclick="addEvent()"
+      >
+        ADD EVENT
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+
+/* =====================================================
+   GOOGLE APPS SCRIPT BRIDGE
+===================================================== */
+
+/*
+ * IMPORTANT:
+ * This INDEX.HTML is hosted on GitHub/Netlify, so
+ * google.script.run is NOT available here.
+ * Put your deployed Apps Script Web App URL below.
+ * It must end in /exec.
+ */
+const API_URL =
+  'https://script.google.com/a/macros/laverdad.edu.ph/s/AKfycbzleAsY0Gc8MJuIcgE11cDDkZCrOag5BQAq5ZjBcclBxGAp9rTF_XtNTptNlqQhZj1wTQ/exec';
+
+let currentRole = null;
+let dashboardData = null;
+let secretaryCodeSession = '';
+let scanner = null;
+let scanning = false;
+let processing = false;
+
+function apiRequest(action, params = {}) {
+
+  return new Promise(function(resolve, reject) {
+
+    if (!API_URL || API_URL.indexOf('PASTE_YOUR_') === 0) {
+      reject(new Error(
+        'Apps Script Web App URL is not configured in INDEX.HTML.'
+      ));
+      return;
+    }
+
+    const callbackName =
+      '__talaanCallback_' +
+      Date.now() + '_' +
+      Math.random().toString(36).slice(2);
+
+    const script =
+      document.createElement('script');
+
+    const query =
+      new URLSearchParams();
+
+    query.set('action', action);
+    query.set('callback', callbackName);
+
+    Object.keys(params || {}).forEach(function(key) {
+      const value = params[key];
+
+      if (value !== undefined && value !== null) {
+        query.set(key, String(value));
+      }
+    });
+
+    let finished = false;
+
+    const cleanup = function() {
+      finished = true;
+      try {
+        delete window[callbackName];
+      } catch (e) {
+        window[callbackName] = undefined;
+      }
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+
+    const timer = setTimeout(function() {
+      if (finished) return;
+      cleanup();
+      reject(new Error(
+        'Apps Script API timed out. Check the Web App deployment and URL.'
+      ));
+    }, 30000);
+
+    window[callbackName] = function(data) {
+      if (finished) return;
+      clearTimeout(timer);
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = function() {
+      if (finished) return;
+      clearTimeout(timer);
+      cleanup();
+      reject(new Error(
+        'Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'
+      ));
+    };
+
+    script.src =
+      API_URL.replace(/\/$/, '') +
+      '?' +
+      query.toString();
+
+    document.head.appendChild(script);
+  });
+}
+
+
+/* =====================================================
+   WELCOME
+===================================================== */
+
+function openSecretaryLogin() {
+
+  document
+    .getElementById('welcomeScreen')
+    .classList.add('hidden');
+
+  document
+    .getElementById('loginScreen')
+    .classList.remove('hidden');
+
+  document
+    .getElementById('secretaryCode')
+    .focus();
+
+}
+
+
+function backToWelcome() {
+
+  stopScanner();
+
+  document
+    .getElementById('loginScreen')
+    .classList.add('hidden');
+
+  document
+    .getElementById('appScreen')
+    .classList.add('hidden');
+
+  document
+    .getElementById('welcomeScreen')
+    .classList.remove('hidden');
+
+  document
+    .getElementById('secretaryCode')
+    .value = '';
+
+  secretaryCodeSession = '';
+
+  currentRole = null;
+
+  dashboardData = null;
+
+}
+
+
+/* =====================================================
+   SECRETARY LOGIN
+===================================================== */
+
+async function secretaryLogin() {
+
+  const code =
+    document
+      .getElementById(
+        'secretaryCode'
+      )
+      .value
+      .trim();
+
+  const status =
+    document
+      .getElementById(
+        'loginStatus'
+      );
+
+
+  if (!code) {
+
+    status.textContent =
+      'Please enter your access code.';
+
+    return;
+
+  }
+
+
+  status.textContent =
+    'Checking access code...';
+
+
+  try {
+
+    const data =
+      await apiRequest(
+        'login',
+        {
+          code: code
+        }
+      );
+
+
+    if (
+      !data ||
+      data.success !== true
+    ) {
+
+      status.textContent =
+        '❌ ' +
+        (
+          data &&
+          data.error
+            ? data.error
+            : 'Invalid access code.'
+        );
+
+      return;
+
+    }
+
+
+    secretaryCodeSession =
+      code;
+
+    currentRole =
+      'Secretary';
+
+
+    openDashboard(
+      'Secretary'
+    );
+
+  }
+
+  catch (error) {
+
+    status.textContent =
+      '❌ ' +
+      error.message;
+
+  }
+
+}
+
+
+/* =====================================================
+   OPEN DASHBOARD
+===================================================== */
+
+async function openDashboard(
+  role
+) {
+
+  currentRole =
+    role;
+
+
+  document
+    .getElementById('welcomeScreen')
+    .classList.add('hidden');
+
+  document
+    .getElementById('loginScreen')
+    .classList.add('hidden');
+
+  document
+    .getElementById('appScreen')
+    .classList.remove('hidden');
+
+
+  document
+    .getElementById('roleBadge')
+    .textContent =
+    role;
+
+
+  const secretaryNav =
+    document.getElementById(
+      'secretaryNavigation'
+    );
+
+
+  if (
+    role === 'Secretary'
+  ) {
+
+    secretaryNav
+      .classList.remove('hidden');
+
+  }
+
+  else {
+
+    secretaryNav
+      .classList.add('hidden');
+
+  }
+
+
+  await loadDashboard();
+
+}
+
+
+/* =====================================================
+   LOAD DASHBOARD
+===================================================== */
+
+async function loadDashboard(
+  selectedDate = ''
+) {
+
+  const content =
+    document.getElementById(
+      'dashboardContent'
+    );
+
+
+  content.innerHTML = `
+
+    <div class="status">
+      Loading TALAAN dashboard...
+    </div>
+
+  `;
+
+
+  try {
+
+    const data =
+      await apiRequest(
+        'dashboard',
+        selectedDate
+          ? { date: selectedDate }
+          : {}
+      );
+
+
+    if (
+      !data ||
+      data.success !== true
+    ) {
+
+      throw new Error(
+        data &&
+        data.error
+          ? data.error
+          : 'Dashboard could not be loaded.'
+      );
+
+    }
+
+
+    dashboardData =
+      data;
+
+
+    showDashboardSheet();
+
+  }
+
+  catch (error) {
+
+    content.innerHTML = `
+
+      <div class="status">
+
+        ❌ <strong>Dashboard Error</strong>
+
+        <br><br>
+
+        ${escapeHtml(error.message)}
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =====================================================
+   DASHBOARD UI
+===================================================== */
+
+function showDashboardSheet() {
+
+  setActiveNav(
+    'navDashboard'
+  );
+
+  const content =
+    document.getElementById(
+      'dashboardContent'
+    );
+
+  if (!content) {
+    return;
+  }
+
+  if (!dashboardData) {
+    return;
+  }
+
+  const d =
+    dashboardData.dashboard || {};
+
+  const selectedDate =
+    dashboardData.selectedDate || '';
+
+  const selectedEvent =
+    (dashboardData.events || []).find(
+      function(event) {
+        return normalizeDateKey(event.date) ===
+          normalizeDateKey(selectedDate);
+      }
+    ) || {};
+
+  let eventOptions = '';
+
+  (dashboardData.events || [])
+    .slice()
+    .reverse()
+    .forEach(
+      function(event) {
+
+        const selected =
+          normalizeDateKey(event.date) ===
+          normalizeDateKey(selectedDate)
+            ? 'selected'
+            : '';
+
+        eventOptions += `
+          <option
+            value="${escapeAttribute(event.date)}"
+            ${selected}
+          >
+            ${escapeHtml(event.date)}
+            — ${escapeHtml(event.event)}
+          </option>
+        `;
+
+      }
+    );
+
+  const highest =
+    d.highestAttendance &&
+    d.highestAttendance.label
+      ? d.highestAttendance.label
+      : '—';
+
+  let html = `
+
+    <div class="dashboard-header">
+
+      <h2>
+        LVCC CALOOCAN 2026–2027
+      </h2>
+
+      <p>
+        Event Attendance Dashboard
+      </p>
+
+      <div class="dashboard-controls">
+
+        <div class="control">
+
+          <label>
+            📅 Event Date
+          </label>
+
+          <select
+            id="dashboardDate"
+            onchange="changeDashboardDate(this.value)"
+          >
+
+            ${eventOptions}
+
+          </select>
+
+        </div>
+
+        <div class="event-pill">
+          ${escapeHtml(selectedEvent.event || 'Event')}
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+  if (d.notYetHeld) {
+    html += `
+      <div class="not-held">
+        <div class="not-held-icon">⚪</div>
+        <strong>EVENT NOT YET HELD</strong>
+        <br>
+        Attendance for this event has not started yet.
+      </div>
+    `;
+  }
+
+  html += `
+
+    <div class="stats-grid">
+
+      <div class="stat-card">
+        <div class="stat-label">TOTAL STUDENTS</div>
+        <div class="stat-number">${d.totalStudents || 0}</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">PRESENT</div>
+        <div class="stat-number">${d.present || 0}</div>
+        <div class="stat-sub">
+          ${Number(d.attendanceRate || 0).toFixed(2)}%
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">ABSENT</div>
+        <div class="stat-number">${d.absent || 0}</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">HIGHEST ATTENDANCE</div>
+        <div class="stat-number" style="font-size:24px;">
+          ${escapeHtml(highest)}
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dashboard-section">
+
+      <h3 class="dashboard-section-title">
+        📊 Overall Attendance
+      </h3>
+
+      <div class="year-grid">
+
+  `;
+
+  const yearData =
+    normalizeDashboardYears(
+      d.years
+    );
+
+  yearData.forEach(
+    function(year) {
+      html += renderYearCard(year);
+    }
+  );
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  content.innerHTML = html;
+}
+
+
+async function changeDashboardDate(selectedDate) {
+
+  await loadDashboard(selectedDate || '');
+
+}
+
+
+/* =====================================================
+   NORMALIZE OVERALL DASHBOARD YEARS
+===================================================== */
+
+function normalizeDashboardYears(years) {
+
+  if (Array.isArray(years)) {
+
+    return years
+      .filter(function(item) {
+        return item &&
+          typeof item === 'object';
+      })
+      .sort(function(a, b) {
+        return Number(
+          a.yearLevel ||
+          a.year ||
+          0
+        ) -
+        Number(
+          b.yearLevel ||
+          b.year ||
+          0
+        );
+      });
+
+  }
+
+  if (
+    years &&
+    typeof years === 'object'
+  ) {
+
+    return ['1','2','3','4']
+      .map(function(level) {
+
+        const item =
+          years[level] ||
+          years[Number(level)] ||
+          {};
+
+        return {
+
+          yearLevel:
+            String(
+              item.yearLevel ||
+              item.year ||
+              level
+            ),
+
+          totalStudents:
+            Number(
+              item.totalStudents ??
+              item.total ??
+              0
+            ),
+
+          present:
+            Number(
+              item.present ||
+              0
+            ),
+
+          absent:
+            Number(
+              item.absent ||
+              0
+            ),
+
+          notYetHeld:
+            Number(
+              item.notYetHeld ??
+              item.notYet ??
+              0
+            ),
+
+          rate:
+            Number(
+              item.rate ??
+              item.percentage ??
+              0
+            ),
+
+          percentage:
+            Number(
+              item.percentage ??
+              item.rate ??
+              0
+            ),
+
+          sections:
+            Array.isArray(
+              item.sections
+            )
+              ? item.sections
+              : []
+
+        };
+
+      });
+
+  }
+
+  return [];
+
+}
+
+
+function renderYearCard(year) {
+
+  const level =
+    String(
+      year.yearLevel ||
+      year.year ||
+      ''
+    );
+
+  const rate =
+    Number(
+      year.rate ??
+      year.percentage ??
+      0
+    );
+
+  const label =
+    level === '1'
+      ? '1ST YEAR'
+      : level === '2'
+        ? '2ND YEAR'
+        : level === '3'
+          ? '3RD YEAR'
+          : '4TH YEAR';
+
+  return `
+    <div class="year-card">
+
+      <div class="year-title">
+        ${label}
+      </div>
+
+      <div class="year-summary">
+        ${rate.toFixed(2)}%
+      </div>
+
+      <div class="progress">
+        <div
+          class="progress-fill"
+          style="width:${Math.min(100, rate)}%"
+        ></div>
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =====================================================
+   ATTENDANCE SHEETS
+===================================================== */
+
+async function showAttendance(
+  sheetName
+) {
+
+  setActiveNav(
+    'nav' +
+    sheetName.replace(
+      'Attendance',
+      'Attendance'
+    )
+  );
+
+
+  const content =
+    document.getElementById(
+      'dashboardContent'
+    );
+
+
+  content.innerHTML = `
+
+    <div class="status">
+      Loading ${escapeHtml(sheetName)}...
+    </div>
+
+  `;
+
+
+  try {
+
+    const result =
+      await apiRequest(
+        'attendance',
+        {
+          sheet:
+            sheetName
+        }
+      );
+
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+
+      throw new Error(
+        result.error ||
+        'Attendance sheet could not be loaded.'
+      );
+
+    }
+
+
+    content.innerHTML = `
+
+      <div class="attendance-card">
+
+        <h2 class="section-heading">
+          📋 ${escapeHtml(sheetName)}
+        </h2>
+
+        <p class="section-description">
+
+          🟢 Present &nbsp;&nbsp;
+          🔴 Absent &nbsp;&nbsp;
+          ⚪ Not Yet Held
+
+        </p>
+
+        <div class="table-wrapper">
+
+          ${createAttendanceTable(
+            result.data
+          )}
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+  catch (error) {
+
+    content.innerHTML = `
+
+      <div class="status">
+        ❌ ${escapeHtml(error.message)}
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =====================================================
+   ATTENDANCE TABLE
+===================================================== */
+
+function createAttendanceTable(
+  data
+) {
+
+  if (
+    !data ||
+    !data.length
+  ) {
+
+    return '<p>No attendance data.</p>';
+
+  }
+
+
+  const today =
+    startOfToday();
+
+
+  let html =
+    '<table><thead><tr>';
+
+
+  data[0]
+    .forEach(
+      function(header) {
+
+        html +=
+          '<th>' +
+          escapeHtml(header) +
+          '</th>';
+
+      }
+    );
+
+
+  html +=
+    '</tr></thead><tbody>';
+
+
+  for (
+    let r = 1;
+    r < data.length;
+    r++
+  ) {
+
+    html +=
+      '<tr>';
+
+
+    data[r]
+      .forEach(
+        function(cell, c) {
+
+          const value =
+            String(
+              cell || ''
+            ).trim();
+
+          let className =
+            '';
+
+
+          if (
+            value.toUpperCase() ===
+            'PRESENT'
+          ) {
+
+            className =
+              'status-present';
+
+          }
+
+          else if (
+            value.toUpperCase() ===
+            'ABSENT'
+          ) {
+
+            className =
+              'status-absent';
+
+          }
+
+          else {
+
+            const header =
+              data[0][c];
+
+            const date =
+              parseClientDate(
+                header
+              );
+
+
+            if (
+              date &&
+              date > today
+            ) {
+
+              className =
+                'status-future';
+
+            }
+
+            else {
+
+              className =
+                'status-empty';
+
+            }
+
+          }
+
+
+          html += `
+
+            <td
+              class="${className}"
+            >
+
+              ${escapeHtml(value)}
+
+            </td>
+
+          `;
+
+        }
+      );
+
+
+    html +=
+      '</tr>';
+
+  }
+
+
+  html +=
+    '</tbody></table>';
+
+
+  return html;
+
+}
+
+
+/* =====================================================
+   SETTINGS
+===================================================== */
+
+function showSettings() {
+
+  if (
+    currentRole !== 'Secretary'
+  ) {
+
+    return;
+
+  }
+
+
+  setActiveNav(
+    'navSettings'
+  );
+
+
+  const content =
+    document.getElementById(
+      'dashboardContent'
+    );
+
+
+  const data =
+    dashboardData &&
+    dashboardData.settings
+      ? dashboardData.settings
+      : [];
+
+
+  if (
+    !data ||
+    data.length < 1
+  ) {
+
+    content.innerHTML = `
+
+      <div class="attendance-card">
+
+        <h2 class="section-heading">
+          ⚙️ Event Settings
+        </h2>
+
+        <p>
+          No settings found.
+        </p>
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  const headers =
+    data[0];
+
+
+  const eventIndex =
+    findHeader(
+      headers,
+      [
+        'EVENT',
+        'EVENT TITLE'
+      ]
+    );
+
+  const dateIndex =
+    findHeader(
+      headers,
+      [
+        'DATE',
+        'EVENT DATE'
+      ]
+    );
+
+  const cutoffIndex =
+    findHeader(
+      headers,
+      [
+        'CUT-OFF',
+        'CUTOFF',
+        'CUT OFF'
+      ]
+    );
+
+  const statusIndex =
+    findHeader(
+      headers,
+      [
+        'STATUS'
+      ]
+    );
+
+
+  let html = `
+
+    <div>
+
+      <h2 class="section-heading">
+        ⚙️ Event Settings
+      </h2>
+
+      <p class="section-description">
+
+        Manage existing events or add a new event.
+        Changes are saved directly to Google Sheets.
+
+      </p>
+
+      <div class="settings-toolbar">
+
+        <button
+          class="add-button"
+          onclick="openAddEvent()"
+        >
+          ＋ ADD EVENT
+        </button>
+
+      </div>
+
+      <div class="settings-list">
+
+  `;
+
+
+  for (
+    let r = 1;
+    r < data.length;
+    r++
+  ) {
+
+    const row =
+      r + 1;
+
+
+    const event =
+      eventIndex >= 0
+        ? data[r][eventIndex]
+        : '';
+
+    const date =
+      dateIndex >= 0
+        ? data[r][dateIndex]
+        : '';
+
+    const cutoff =
+      cutoffIndex >= 0
+        ? data[r][cutoffIndex]
+        : '';
+
+    const status =
+      statusIndex >= 0
+        ? data[r][statusIndex]
+        : '';
+
+
+    html += `
+
+      <div class="setting-card">
+
+        <div class="setting-top">
+
+          <div class="setting-title">
+
+            ${escapeHtml(
+              event ||
+              'Untitled Event'
+            )}
+
+          </div>
+
+          <div class="row-badge">
+            ROW ${row}
+          </div>
+
+        </div>
+
+
+        <div class="setting-grid">
+
+          <div class="setting-field">
+
+            <label>
+              EVENT
+            </label>
+
+            <input
+              id="event_${row}"
+              value="${escapeAttribute(event)}"
+            >
+
+          </div>
+
+
+          <div class="setting-field">
+
+            <label>
+              DATE
+            </label>
+
+            <input
+              id="date_${row}"
+              value="${escapeAttribute(date)}"
+              placeholder="August 24"
+            >
+
+          </div>
+
+
+          <div class="setting-field">
+
+            <label>
+              CUT-OFF
+            </label>
+
+            <input
+              id="cutoff_${row}"
+              value="${escapeAttribute(cutoff)}"
+              placeholder="7:30 AM"
+            >
+
+          </div>
+
+
+          <div class="setting-field">
+
+            <label>
+              STATUS
+            </label>
+
+            <input
+              id="status_${row}"
+              value="${escapeAttribute(status)}"
+              placeholder="Active"
+            >
+
+          </div>
+
+        </div>
+
+
+        <button
+          class="save-button"
+          onclick="saveSettingRow(${row})"
+        >
+          💾 SAVE EVENT
+        </button>
+
+      </div>
+
+    `;
+
+  }
+
+
+  html += `
+      </div>
+    </div>
+  `;
+
+
+  content.innerHTML =
+    html;
+
+}
+
+
+/* =====================================================
+   SAVE SETTING
+===================================================== */
+
+async function saveSettingRow(
+  row
+) {
+
+  if (
+    currentRole !== 'Secretary'
+  ) {
+    return;
+  }
+
+
+  try {
+
+    const result =
+      await apiRequest(
+        'updateSettings',
+        {
+
+          code:
+            secretaryCodeSession,
+
+          row:
+            row,
+
+          event:
+            document
+              .getElementById(
+                'event_' + row
+              )
+              .value
+              .trim(),
+
+          date:
+            document
+              .getElementById(
+                'date_' + row
+              )
+              .value
+              .trim(),
+
+          cutoff:
+            document
+              .getElementById(
+                'cutoff_' + row
+              )
+              .value
+              .trim(),
+
+          status:
+            document
+              .getElementById(
+                'status_' + row
+              )
+              .value
+              .trim()
+
+        }
+      );
+
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+
+      throw new Error(
+        result.error ||
+        'Unable to save event.'
+      );
+
+    }
+
+
+    alert(
+      '✅ Event updated successfully.'
+    );
+
+
+    await refreshDashboardData();
+
+    showSettings();
+
+  }
+
+  catch (error) {
+
+    alert(
+      '❌ Unable to save event.\n\n' +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   ADD EVENT MODAL
+===================================================== */
+
+function openAddEvent() {
+
+  document
+    .getElementById(
+      'addEventModal'
+    )
+    .classList.remove(
+      'hidden'
+    );
+
+}
+
+
+function closeAddEvent() {
+
+  document
+    .getElementById(
+      'addEventModal'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+}
+
+
+async function addEvent() {
+
+  if (
+    currentRole !== 'Secretary'
+  ) {
+    return;
+  }
+
+
+  const event =
+    document
+      .getElementById(
+        'newEvent'
+      )
+      .value
+      .trim();
+
+  const date =
+    document
+      .getElementById(
+        'newDate'
+      )
+      .value
+      .trim();
+
+  const cutoff =
+    document
+      .getElementById(
+        'newCutoff'
+      )
+      .value
+      .trim();
+
+  const status =
+    document
+      .getElementById(
+        'newStatus'
+      )
+      .value
+      .trim();
+
+
+  if (
+    !event ||
+    !date
+  ) {
+
+    alert(
+      'Please provide the event title and date.'
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const result =
+      await apiRequest(
+        'addEvent',
+        {
+
+          code:
+            secretaryCodeSession,
+
+          event:
+            event,
+
+          date:
+            date,
+
+          cutoff:
+            cutoff,
+
+          status:
+            status
+
+        }
+      );
+
+
+    if (
+      !result ||
+      result.success !== true
+    ) {
+
+      throw new Error(
+        result.error ||
+        'Unable to add event.'
+      );
+
+    }
+
+
+    alert(
+      '✅ New event added successfully.'
+    );
+
+
+    document
+      .getElementById(
+        'newEvent'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'newDate'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'newCutoff'
+      )
+      .value = '';
+
+
+    closeAddEvent();
+
+
+    await refreshDashboardData();
+
+    showSettings();
+
+  }
+
+  catch (error) {
+
+    alert(
+      '❌ Unable to add event.\n\n' +
+      error.message
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   REFRESH
+===================================================== */
+
+async function refreshDashboardData() {
+
+  const data =
+    await apiRequest(
+      'dashboard'
+    );
+
+
+  if (
+    data &&
+    data.success === true
+  ) {
+
+    dashboardData =
+      data;
+
+  }
+
+}
+
+
+/* =====================================================
+   QR SCANNER
+===================================================== */
+
+function openScanner() {
+  if (currentRole !== 'Secretary') return;
+  setActiveNav('navScanner');
+  const content = document.getElementById('dashboardContent');
+  content.innerHTML = `
+    <div class="attendance-card">
+      <h2 class="section-heading">📷 QR Attendance Scanner</h2>
+      <p class="section-description">Secretary-only scanner. On mobile, START SCANNER opens the device camera.</p>
+      <div id="reader"></div>
+      <input id="qrCameraInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="scanQrImage(this)">
+      <button class="primary-button" onclick="startScanner()">📷 START QR SCANNER</button>
+      <button class="secondary-button" onclick="stopScanner()">CLEAR SCANNER</button>
+      <div id="scanLoading" class="status">Ready. Tap START QR SCANNER.</div>
+      <div id="scanResult" class="result"></div>
+    </div>
+  `;
+}
+
+function startScanner() {
+  if (processing) return;
+  const input = document.getElementById('qrCameraInput');
+  const loading = document.getElementById('scanLoading');
+  if (!input) return;
+  if (loading) loading.textContent = 'Opening camera. Take a clear photo of the student QR code.';
+  input.value = '';
+  input.click();
+}
+
+async function scanQrImage(input) {
+  const file = input && input.files ? input.files[0] : null;
+  const loading = document.getElementById('scanLoading');
+  if (!file) {
+    if (loading) loading.textContent = 'No image selected.';
+    return;
+  }
+  processing = true;
+  if (loading) loading.textContent = 'Reading QR code...';
+  try {
+    scanner = new Html5Qrcode('reader');
+    const decodedText = await scanner.scanFile(file, true);
+    if (loading) loading.textContent = 'QR detected. Processing attendance...';
+    const data = await apiRequest('record', { qrText: decodedText });
+    displayResult(data);
+  } catch (error) {
+    showScanError('QR could not be read. Make sure the QR code is clear and fully visible. ' + (error && error.message ? error.message : ''));
+  } finally {
+    processing = false;
+    if (scanner) { try { scanner.clear(); } catch (e) {} scanner = null; }
+  }
+}
+
+async function stopScanner() {
+  processing = false;
+  if (scanner) { try { await scanner.clear(); } catch (error) { console.log(error); } }
+  scanner = null;
+  scanning = false;
+  const input = document.getElementById('qrCameraInput');
+  if (input) input.value = '';
+}
+
+
+/* =====================================================
+   QR SUCCESS
+===================================================== */
+
+async function onScanSuccess(
+  decodedText
+) {
+
+  if (processing) {
+    return;
+  }
+
+
+  processing = true;
+
+
+  const loading =
+    document.getElementById(
+      'scanLoading'
+    );
+
+
+  if (loading) {
+
+    loading.textContent =
+      'QR detected. Processing...';
+
+  }
+
+
+  await stopScanner();
+
+
+  try {
+
+    const data =
+      await apiRequest(
+        'record',
+        {
+          qrText:
+            decodedText
+        }
+      );
+
+
+    displayResult(
+      data
+    );
+
+  }
+
+  catch (error) {
+
+    showScanError(
+      error.message
+    );
+
+  }
+
+
+  processing = false;
+
+}
+
+
+/* =====================================================
+   SCAN RESULT
+===================================================== */
+
+function displayResult(
+  data
+) {
+
+  const result =
+    document.getElementById(
+      'scanResult'
+    );
+
+
+  if (!result) {
+    return;
+  }
+
+
+  result.style.display =
+    'block';
+
+
+  if (
+    !data ||
+    data.success === false
+  ) {
+
+    showScanError(
+      data &&
+      (
+        data.error ||
+        data.message
+      )
+        ? (
+            data.error ||
+            data.message
+          )
+        : 'Unable to process attendance.'
+    );
+
+    return;
+
+  }
+
+
+  if (
+    data.decision ===
+    'PRESENT'
+  ) {
+
+    result.className =
+      'result success';
+
+
+    result.innerHTML = `
+
+      <div class="student-name">
+        🟢 PRESENT
+      </div>
+
+      <div class="detail">
+        <strong>Student:</strong>
+        ${escapeHtml(data.student)}
+      </div>
+
+      <div class="detail">
+        <strong>Section:</strong>
+        ${escapeHtml(data.section)}
+      </div>
+
+      <div class="detail">
+        <strong>Event:</strong>
+        ${escapeHtml(data.event)}
+      </div>
+
+      <div class="detail">
+        <strong>Date:</strong>
+        ${escapeHtml(data.date)}
+      </div>
+
+      <div class="detail">
+        <strong>Cut-off:</strong>
+        ${escapeHtml(data.cutoff)}
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  if (
+    data.decision ===
+    'ABSENT'
+  ) {
+
+    result.className =
+      'result warning';
+
+
+    result.innerHTML = `
+
+      <div class="student-name">
+        🔴 ABSENT
+      </div>
+
+      <div class="detail">
+        <strong>Student:</strong>
+        ${escapeHtml(data.student)}
+      </div>
+
+      <div class="detail">
+        <strong>Section:</strong>
+        ${escapeHtml(data.section)}
+      </div>
+
+      <div class="detail">
+        <strong>Event:</strong>
+        ${escapeHtml(data.event)}
+      </div>
+
+      <div class="detail">
+        <strong>Date:</strong>
+        ${escapeHtml(data.date)}
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  if (
+    data.decision ===
+    'ALREADY_RECORDED'
+  ) {
+
+    result.className =
+      'result warning';
+
+
+    result.innerHTML = `
+
+      <div class="student-name">
+        ⚠️ ALREADY RECORDED
+      </div>
+
+      <div class="detail">
+        <strong>Student:</strong>
+        ${escapeHtml(data.student)}
+      </div>
+
+      <div class="detail">
+        <strong>Recorded:</strong>
+        ${escapeHtml(data.currentValue)}
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  if (
+    data.decision ===
+    'NOT_YET_HELD'
+  ) {
+
+    result.className =
+      'result warning';
+
+
+    result.innerHTML = `
+
+      <div class="student-name">
+        ⚪ EVENT NOT YET HELD
+      </div>
+
+      <div class="detail">
+        <strong>Event:</strong>
+        ${escapeHtml(data.event)}
+      </div>
+
+      <div class="detail">
+        <strong>Date:</strong>
+        ${escapeHtml(data.date)}
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  result.className =
+    'result success';
+
+
+  result.innerHTML = `
+
+    <div class="student-name">
+      ✅ SUCCESS
+    </div>
+
+    <div class="detail">
+      ${escapeHtml(
+        data.action ||
+        'Attendance processed.'
+      )}
+    </div>
+
+  `;
+
+}
+
+
+function showScanError(
+  message
+) {
+
+  const result =
+    document.getElementById(
+      'scanResult'
+    );
+
+
+  if (!result) {
+    return;
+  }
+
+
+  result.style.display =
+    'block';
+
+  result.className =
+    'result error';
+
+
+  result.innerHTML = `
+
+    <div class="student-name">
+      ❌ SYSTEM ERROR
+    </div>
+
+    <div class="detail">
+      ${escapeHtml(message)}
+    </div>
+
+  `;
+
+}
+
+
+/* =====================================================
+   NAVIGATION
+===================================================== */
+
+function setActiveNav(
+  id
+) {
+
+  document
+    .querySelectorAll(
+      '.nav-button'
+    )
+    .forEach(
+      function(button) {
+
+        button.classList.remove(
+          'active'
+        );
+
+      }
+    );
+
+
+  const selected =
+    document.getElementById(
+      id
+    );
+
+
+  if (selected) {
+
+    selected.classList.add(
+      'active'
+    );
+
+  }
+
+}
+
+
+/* =====================================================
+   DATE HELPERS
+===================================================== */
+
+function parseClientDate(
+  text
+) {
+
+  const value =
+    String(
+      text || ''
+    ).trim();
+
+
+  if (!value) {
+    return null;
+  }
+
+
+  let date =
+    new Date(value);
+
+
+  if (
+    !isNaN(
+      date.getTime()
+    )
+  ) {
+
+    date.setHours(
+      0,0,0,0
+    );
+
+    return date;
+
+  }
+
+
+  const match =
+    value.match(
+      /^([A-Za-z]+)\s+(\d{1,2})(?:,\s*(\d{4}))?$/
+    );
+
+
+  if (!match) {
+    return null;
+  }
+
+
+  const year =
+    match[3]
+      ? Number(match[3])
+      : new Date().getFullYear();
+
+
+  date =
+    new Date(
+      match[1] +
+      ' 1, ' +
+      year
+    );
+
+
+  if (
+    isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  date =
+    new Date(
+      year,
+      date.getMonth(),
+      Number(match[2])
+    );
+
+
+  date.setHours(
+    0,0,0,0
+  );
+
+
+  return date;
+
+}
+
+
+function normalizeDateKey(
+  text
+) {
+
+  const date =
+    parseClientDate(
+      text
+    );
+
+
+  if (!date) {
+
+    return String(
+      text || ''
+    )
+    .trim()
+    .toUpperCase();
+
+  }
+
+
+  return (
+    date.getFullYear() +
+    '-' +
+    String(
+      date.getMonth()+1
+    ).padStart(2,'0') +
+    '-' +
+    String(
+      date.getDate()
+    ).padStart(2,'0')
+  );
+
+}
+
+
+function startOfToday() {
+
+  const d =
+    new Date();
+
+  d.setHours(
+    0,0,0,0
+  );
+
+  return d;
+
+}
+
+
+/* =====================================================
+   HEADER FINDER
+===================================================== */
+
+function findHeader(
+  headers,
+  targets
+) {
+
+  const list =
+    targets.map(
+      x =>
+        String(x)
+          .trim()
+          .toUpperCase()
+    );
+
+
+  for (
+    let i = 0;
+    i < headers.length;
+    i++
+  ) {
+
+    if (
+      list.indexOf(
+        String(
+          headers[i] || ''
+        )
+        .trim()
+        .toUpperCase()
+      ) !== -1
+    ) {
+
+      return i;
+
+    }
+
+  }
+
+
+  return -1;
+
+}
+
+
+/* =====================================================
+   ESCAPE
+===================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+  .replace(
+    /</g,
+    '&lt;'
+  )
+  .replace(
+    />/g,
+    '&gt;'
+  )
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+  .replace(
+    /'/g,
+    '&#039;'
+  );
+
+}
+
+
+function escapeAttribute(
+  value
+) {
+
+  return escapeHtml(
+    value
+  );
+
+}
+
+</script>
+
+</body>
+
+</html>
