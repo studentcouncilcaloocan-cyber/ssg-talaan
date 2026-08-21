@@ -887,6 +887,13 @@ th {
 
 
 <body>
+<div id="talaanBootScreen" aria-hidden="true">
+  <div class="talaan-boot-inner">
+    <img src="" id="talaanBootLogo" alt="SSG TALAAN">
+    <div class="talaan-boot-title">SSG TALAAN</div>
+    <div class="talaan-boot-bar"><span></span></div>
+  </div>
+</div>
 
 
 <!-- =====================================================
@@ -4037,6 +4044,20 @@ function escapeAttribute(
 .talaan-auth-card{width:100%;max-width:480px;background:#fff;border-radius:24px;padding:26px;box-shadow:0 25px 80px rgba(0,0,0,.25);animation:talaanPageIn .25s ease}
 .talaan-auth-logo-strip{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 5px;height:52px}
 .talaan-auth-logo-strip img{height:46px;width:auto;max-width:100px;object-fit:contain}
+
+/* =====================================================
+   TALAAN REFRESH BOOT SCREEN
+   ===================================================== */
+#talaanBootScreen{position:fixed;inset:0;z-index:99999;background:#fff;display:flex;align-items:center;justify-content:center;opacity:1;visibility:visible;transition:opacity .28s ease,visibility .28s ease}
+#talaanBootScreen.talaan-boot-hide{opacity:0;visibility:hidden;pointer-events:none}
+.talaan-boot-inner{text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+#talaanBootLogo{width:92px;height:92px;object-fit:contain;animation:talaanLogoPulse 1.35s ease-in-out infinite}
+.talaan-boot-title{font-size:22px;font-weight:900;letter-spacing:1px;color:#17266b}
+.talaan-boot-bar{width:150px;height:5px;border-radius:99px;background:#e8edf5;overflow:hidden;margin-top:3px}
+.talaan-boot-bar span{display:block;height:100%;width:0;background:#17266b;border-radius:99px;animation:talaanBootFill 1.35s ease-in-out infinite}
+@keyframes talaanBootFill{0%{width:0;opacity:.5}55%{width:100%;opacity:1}100%{width:100%;opacity:.5}}
+@keyframes talaanLogoPulse{0%,100%{transform:scale(.94);opacity:.72}50%{transform:scale(1);opacity:1}}
+
 .talaan-welcome-logo-strip{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 auto 7px;height:48px}
 .talaan-welcome-logo-strip img{height:42px;width:auto;max-width:92px;object-fit:contain}
 .talaan-role-tabs button,.talaan-mode-tabs button{font-size:12px;padding:8px 5px}
@@ -4963,11 +4984,19 @@ function renderHeaderLogo_() {
   topbar.insertBefore(left,topbar.firstChild);
 }
 
+function hideTalaanBootScreen_(){
+  const boot=document.getElementById('talaanBootScreen');
+  if(boot) boot.classList.add('talaan-boot-hide');
+}
+
 /* =====================================================
    REFRESH-PERSISTENCE INITIALIZER
    ===================================================== */
 
 window.addEventListener('DOMContentLoaded', function(){
+  const bootLogo=document.getElementById('talaanBootLogo');
+  if(bootLogo) bootLogo.src=TALAAN_LOGO_DATA;
+
   injectTalaanBranding_();
   ensureHamburger_();
   renderHeaderLogo_();
@@ -4983,22 +5012,25 @@ window.addEventListener('DOMContentLoaded', function(){
   const stored=getStoredTalaanSession_();
   if(!stored){
     localStorage.removeItem('talaanSession');
+    hideTalaanBootScreen_();
     return;
   }
 
+  // Keep the boot screen over the UI while the saved session is restored.
   talaanSession=stored;
   currentRole=stored.session.role;
   secretaryCodeSession=stored.session.code||'';
 
-  // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
     openDashboard(currentRole, stored.session);
+    hideTalaanBootScreen_();
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
     document.getElementById('appScreen')?.classList.add('hidden');
     document.getElementById('welcomeScreen')?.classList.remove('hidden');
+    hideTalaanBootScreen_();
   });
 });
 
