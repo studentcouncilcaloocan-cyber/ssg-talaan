@@ -914,6 +914,12 @@ th {
   color:#24324a;
 }
 
+.talaan-id-action.course-zip-button {
+  background:#fff;
+  color:#17266b;
+  border:1px solid #17266b;
+}
+
 .talaan-id-action:hover {
   transform:translateY(-1px);
 }
@@ -1418,16 +1424,18 @@ th {
         LVCC Caloocan
       </div>
 
-      <div class="talaan-top-search" id="talaanTopSearch">
-        <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-        <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
-      </div>
+      <div class="top-account">
+        <div
+          id="roleBadge"
+          class="role-badge"
+        >
+          Guest
+        </div>
 
-      <div
-        id="roleBadge"
-        class="role-badge"
-      >
-        Guest
+        <div class="talaan-top-search" id="talaanTopSearch">
+          <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+          <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+        </div>
       </div>
 
     </div>
@@ -4371,13 +4379,13 @@ function escapeAttribute(
 .talaan-auth-actions{display:flex;gap:9px;margin-top:12px}
 .talaan-auth-actions button{flex:1}
 
-.talaan-top-search{display:flex;align-items:center;gap:7px;flex:1;max-width:520px;margin:0 18px}
+.top-account{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:280px}.talaan-top-search{display:flex;align-items:center;gap:7px;width:100%;max-width:520px;margin:0}
 .talaan-top-search input{height:40px;margin:0!important;border:1px solid #dce3ee;border-radius:11px;padding:0 12px;font-size:13px;background:#f8fafc;width:100%;outline:none}
 .talaan-top-search input:focus{border-color:#17266b;box-shadow:0 0 0 3px rgba(23,38,107,.08);background:#fff}
 .talaan-top-search button{height:40px;border:0;border-radius:11px;background:#17266b;color:#fff;font-weight:900;padding:0 15px;cursor:pointer;white-space:nowrap}
 .talaan-top-search button:hover{transform:translateY(-1px)}
 .talaan-search-page .talaan-search-hint{font-size:12px;color:#718096;margin:-5px 0 14px}
-@media(max-width:700px){.talaan-top-search{order:3;width:100%;max-width:none;margin:10px 0 0}.topbar{flex-wrap:wrap}.talaan-top-search input{min-width:0}.talaan-top-left{max-width:52%}.role-badge{margin-left:auto}}
+@media(max-width:700px){.topbar{flex-wrap:wrap}.top-account{width:100%;min-width:0;align-items:stretch}.talaan-top-search{width:100%;max-width:none}.talaan-top-search input{min-width:0}.talaan-top-left{max-width:52%}.role-badge{align-self:flex-end}}
 .talaan-search-row{display:flex;gap:8px;align-items:center;margin:0 0 15px}
 .talaan-search-row input{margin:0}
 .talaan-search-row button{width:auto;margin:0;padding:13px 16px}
@@ -4890,7 +4898,7 @@ async function loadDashboard(selectedDate = '') {
 function renderWelcomeName_() {
   const s = currentSession_();
   if (s.role === 'Student') return s.name || 'Student';
-  if (s.role === 'Teacher') return 'Teacher • ' + (s.code || '');
+  if (s.role === 'Teacher') return s.name || 'Teacher';
   if (s.role === 'Admin') return 'Administrator';
   if (s.role === 'Secretary') return 'Secretary';
   return 'User';
@@ -4942,12 +4950,6 @@ function showDashboardSheet() {
     '<div class="talaan-summary-item"><strong>' + escapeHtml(highest?.label || '—') + (highest ? ' • ' + Number(highest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Highest attendance rate</span></div>' +
     '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
   '</div></div>';
-
-  if (role === 'Secretary' || role === 'Teacher' || role === 'Admin') {
-    html += '<div class="dashboard-section"><h3 class="dashboard-section-title">🔎 Search Student</h3>' +
-      '<div class="talaan-search-row"><input id="studentSearchInput" placeholder="Search student name..."><button class="primary-button" onclick="searchStudent_()">SEARCH</button></div>' +
-      '<div id="studentSearchResults"></div></div>';
-  }
 
   setPage_(html);
 }
@@ -5456,7 +5458,7 @@ async function showStudentDirectory_() {
         html += '<details class="talaan-id-course" open>' +
           '<summary><div class="talaan-id-summary-row"><span>' + escapeHtml(courseName) + '</span><span class="talaan-id-summary-meta">' + courseStudents.length + ' student' + (courseStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
           '<div class="talaan-id-course-body">' +
-            '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
+            '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary course-zip-button" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
 
         sections.forEach(function(section) {
           const sectionStudents = collectStudentsFromSection_(course.sections[section]);
