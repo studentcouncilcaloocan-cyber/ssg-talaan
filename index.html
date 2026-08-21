@@ -2741,65 +2741,236 @@ async function refreshDashboardData() {
 ===================================================== */
 
 function openScanner() {
-  if (currentRole !== 'Secretary') return;
+
+  if (currentRole !== 'Secretary') {
+    return;
+  }
+
   setActiveNav('navScanner');
-  const content = document.getElementById('dashboardContent');
+
+  const content =
+    document.getElementById('dashboardContent');
+
   content.innerHTML = `
+
     <div class="attendance-card">
-      <h2 class="section-heading">📷 QR Attendance Scanner</h2>
-      <p class="section-description">Secretary-only scanner. On mobile, START SCANNER opens the device camera.</p>
+
+      <h2 class="section-heading">
+        📷 QR Attendance Scanner
+      </h2>
+
+      <p class="section-description">
+        Secretary-only scanner. Allow camera access when prompted.
+      </p>
+
       <div id="reader"></div>
-      <input id="qrCameraInput" type="file" accept="image/*" capture="environment" style="display:none" onchange="scanQrImage(this)">
-      <button class="primary-button" onclick="startScanner()">📷 START QR SCANNER</button>
-      <button class="secondary-button" onclick="stopScanner()">CLEAR SCANNER</button>
-      <div id="scanLoading" class="status">Ready. Tap START QR SCANNER.</div>
-      <div id="scanResult" class="result"></div>
+
+      <button
+        id="startScannerButton"
+        class="primary-button"
+        onclick="startScanner()"
+      >
+        📷 START QR SCANNER
+      </button>
+
+      <button
+        class="secondary-button"
+        onclick="stopScanner()"
+      >
+        CLEAR SCANNER
+      </button>
+
+      <div
+        id="scanLoading"
+        class="status"
+      >
+        Ready. Tap START QR SCANNER.
+      </div>
+
+      <div
+        id="scanResult"
+        class="result"
+      ></div>
+
     </div>
+
   `;
 }
 
-function startScanner() {
-  if (processing) return;
-  const input = document.getElementById('qrCameraInput');
-  const loading = document.getElementById('scanLoading');
-  if (!input) return;
-  if (loading) loading.textContent = 'Opening camera. Take a clear photo of the student QR code.';
-  input.value = '';
-  input.click();
-}
 
-async function scanQrImage(input) {
-  const file = input && input.files ? input.files[0] : null;
-  const loading = document.getElementById('scanLoading');
-  if (!file) {
-    if (loading) loading.textContent = 'No image selected.';
+async function startScanner() {
+
+  if (processing || scanning) {
     return;
   }
-  processing = true;
-  if (loading) loading.textContent = 'Reading QR code...';
-  try {
-    scanner = new Html5Qrcode('reader');
-    const decodedText = await scanner.scanFile(file, true);
-    if (loading) loading.textContent = 'QR detected. Processing attendance...';
-    const data = await apiRequest('record', { qrText: decodedText });
-    displayResult(data);
-  } catch (error) {
-    showScanError('QR could not be read. Make sure the QR code is clear and fully visible. ' + (error && error.message ? error.message : ''));
-  } finally {
-    processing = false;
-    if (scanner) { try { scanner.clear(); } catch (e) {} scanner = null; }
+
+  const reader =
+    document.getElementById('reader');
+
+  const loading =
+    document.getElementById('scanLoading');
+
+  const startButton =
+    document.getElementById('startScannerButton');
+
+  if (!reader) {
+    return;
   }
+
+  try {
+
+    if (startButton) {
+      startButton.disabled = true;
+      startButton.textContent =
+        '📷 CAMERA STARTING...';
+    }
+
+    if (loading) {
+      loading.textContent =
+        'Requesting camera access...';
+    }
+
+    scanner =
+      new Html5Qrcode('reader');
+
+    scanning = true;
+
+    await scanner.start(
+
+      {
+        facingMode: 'environment'
+      },
+
+      {
+        fps: 10,
+        qrbox: {
+          width: 250,
+          height: 250
+        },
+        aspectRatio: 1.0
+      },
+
+      function(decodedText) {
+
+        onScanSuccess(decodedText);
+
+      },
+
+      function(errorMessage) {
+
+        // Normal while searching for a QR code.
+        // Do not show an error for every failed frame.
+
+      }
+
+    );
+
+    if (loading) {
+      loading.textContent =
+        '📷 Camera active. Point the camera at the student QR code.';
+    }
+
+    if (startButton) {
+      startButton.textContent =
+        '📷 SCANNING...';
+    }
+
+  }
+
+  catch (error) {
+
+    scanning = false;
+
+    if (scanner) {
+      try {
+        await scanner.clear();
+      } catch (e) {}
+      scanner = null;
+    }
+
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.textContent =
+        '📷 START QR SCANNER';
+    }
+
+    let message =
+      'Unable to open the camera.';
+
+    if (
+      error &&
+      error.message
+    ) {
+      message +=
+        ' ' +
+        error.message;
+    }
+
+    if (loading) {
+      loading.textContent =
+        message;
+    }
+
+    showScanError(message);
+
+  }
+
 }
+
 
 async function stopScanner() {
+
   processing = false;
-  if (scanner) { try { await scanner.clear(); } catch (error) { console.log(error); } }
+
+  if (scanner) {
+
+    try {
+
+      if (scanning) {
+        await scanner.stop();
+      }
+
+    }
+
+    catch (error) {
+      console.log(error);
+    }
+
+    try {
+      await scanner.clear();
+    }
+    catch (error) {
+      console.log(error);
+    }
+
+  }
+
   scanner = null;
   scanning = false;
-  const input = document.getElementById('qrCameraInput');
-  if (input) input.value = '';
+
+  const loading =
+    document.getElementById('scanLoading');
+
+  const startButton =
+    document.getElementById('startScannerButton');
+
+  if (loading) {
+    loading.textContent =
+      'Scanner stopped. Tap START QR SCANNER to scan again.';
+  }
+
+  if (startButton) {
+    startButton.disabled = false;
+    startButton.textContent =
+      '📷 START QR SCANNER';
+  }
+
 }
 
+
+/* =====================================================
+   QR SUCCESS
+===================================================== */
 
 /* =====================================================
    QR SUCCESS
