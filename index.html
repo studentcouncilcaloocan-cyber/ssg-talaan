@@ -921,11 +921,12 @@ th {
 .talaan-id-year,
 .talaan-id-course,
 .talaan-id-section {
-  background:#fff;
-  border:1px solid #e0e7f0;
-  border-radius:16px;
-  margin:10px 0;
+  background:#f4f7fc;
+  border:1px solid #d8e1ef;
+  border-radius:13px;
+  margin:9px 0;
   overflow:hidden;
+  box-shadow:0 2px 7px rgba(23,38,107,.04);
 }
 
 .talaan-id-year > summary,
@@ -941,24 +942,70 @@ th {
   display:none;
 }
 
+/* YEAR LEVEL — clean white outer container */
+.talaan-id-year {
+  background:#fff;
+  border:1px solid #dfe6f0;
+  border-radius:18px;
+  margin:12px 0;
+  overflow:hidden;
+  box-shadow:0 5px 18px rgba(20,43,75,.06);
+}
+
 .talaan-id-year > summary {
-  padding:16px 18px;
+  padding:17px 19px;
   font-size:17px;
   font-weight:900;
   color:#17266b;
-  background:#f7f9fc;
+  background:#fff;
+  border-bottom:1px solid #edf1f6;
+}
+
+.talaan-id-year[open] > summary {
+  border-bottom-color:#e4eaf2;
+}
+
+/* COURSE — light navy/blue layer */
+.talaan-id-course {
+  background:#edf3fb;
+  border:1px solid #cbd9ec;
+  border-radius:15px;
+  margin:11px 0;
+  overflow:hidden;
 }
 
 .talaan-id-course > summary {
   padding:13px 16px;
   font-weight:900;
-  color:#263b73;
+  color:#17366f;
+  background:#e7eef9;
+  transition:background .15s ease, color .15s ease;
 }
 
+.talaan-id-course > summary:hover {
+  background:#dce8f7;
+}
+
+.talaan-id-course[open] > summary {
+  background:#e1ebf8;
+  border-bottom:1px solid #cbd9ec;
+}
+
+/* SECTION — darker blue dropdown layer with light text */
 .talaan-id-section > summary {
   padding:11px 14px;
   font-weight:800;
-  color:#34445f;
+  color:#fff;
+  background:#5b73a8;
+  transition:background .15s ease;
+}
+
+.talaan-id-section > summary:hover {
+  background:#4f6799;
+}
+
+.talaan-id-section[open] > summary {
+  background:#4b6292;
 }
 
 .talaan-id-summary-row {
@@ -974,10 +1021,27 @@ th {
   font-weight:700;
 }
 
-.talaan-id-section-body,
-.talaan-id-course-body,
+.talaan-id-course > summary .talaan-id-summary-meta {
+  color:#52698f;
+}
+
+.talaan-id-section > summary .talaan-id-summary-meta {
+  color:#e8eef8;
+}
+
+.talaan-id-section-body {
+  padding:0 14px 14px;
+  background:#f8faff;
+}
+
+.talaan-id-course-body {
+  padding:0 14px 14px;
+  background:#edf3fb;
+}
+
 .talaan-id-year-body {
   padding:0 14px 14px;
+  background:#fff;
 }
 
 .talaan-id-student {
