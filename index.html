@@ -1081,6 +1081,11 @@ th {
         LVCC Caloocan
       </div>
 
+      <div class="talaan-top-search" id="talaanTopSearch">
+        <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+        <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+      </div>
+
       <div
         id="roleBadge"
         class="role-badge"
@@ -1546,7 +1551,7 @@ async function openDashboard(role) {
   }
 
 
-  await loadDashboard();
+  await loadDashboard('__NO_DATE__');
 
 }
 
@@ -1609,7 +1614,7 @@ async function loadDashboard(
      * HINDI natin hahayaang mapalitan ito ng
      * stale/previous selectedDate mula sa backend.
      */
-    if (selectedDate) {
+    if (selectedDate && selectedDate !== '__NO_DATE__') {
 
       data.selectedDate =
         selectedDate;
@@ -1692,7 +1697,9 @@ function showDashboardSheet() {
     ) || {};
 
 
-  let eventOptions = '';
+  let eventOptions = `
+    <option value="" selected>&lt; SELECT DATE HERE &gt;</option>
+  `;
 
 
   (dashboardData.events || [])
@@ -3980,9 +3987,12 @@ function escapeAttribute(
 .talaan-hamburger{
   position:fixed;left:18px;top:18px;z-index:1001;width:48px;height:48px;
   border:0;border-radius:14px;background:#17266b;color:#fff;font-size:24px;
-  cursor:pointer;box-shadow:0 8px 24px rgba(23,38,107,.22);transition:.2s;
+  cursor:pointer;box-shadow:0 8px 24px rgba(23,38,107,.22);
+  transition:transform .28s ease,opacity .22s ease;
 }
 .talaan-hamburger:hover{transform:translateY(-2px)}
+.talaan-hamburger.menu-open{transform:translateX(-72px);opacity:0;pointer-events:none}
+.talaan-hamburger.menu-open:hover{transform:translateX(-72px)}
 .talaan-menu-backdrop{position:fixed;inset:0;background:rgba(10,25,55,.38);z-index:999;opacity:0;pointer-events:none;transition:.25s}
 .talaan-menu-backdrop.open{opacity:1;pointer-events:auto}
 .talaan-menu{position:fixed;top:0;left:0;bottom:0;width:310px;max-width:88vw;background:#fff;z-index:1000;
@@ -4023,6 +4033,14 @@ function escapeAttribute(
 .talaan-eye{position:absolute;right:7px;top:6px;width:38px;height:38px;border:0;background:transparent;cursor:pointer;font-size:17px}
 .talaan-auth-actions{display:flex;gap:9px;margin-top:12px}
 .talaan-auth-actions button{flex:1}
+
+.talaan-top-search{display:flex;align-items:center;gap:7px;flex:1;max-width:520px;margin:0 18px}
+.talaan-top-search input{height:40px;margin:0!important;border:1px solid #dce3ee;border-radius:11px;padding:0 12px;font-size:13px;background:#f8fafc;width:100%;outline:none}
+.talaan-top-search input:focus{border-color:#17266b;box-shadow:0 0 0 3px rgba(23,38,107,.08);background:#fff}
+.talaan-top-search button{height:40px;border:0;border-radius:11px;background:#17266b;color:#fff;font-weight:900;padding:0 15px;cursor:pointer;white-space:nowrap}
+.talaan-top-search button:hover{transform:translateY(-1px)}
+.talaan-search-page .talaan-search-hint{font-size:12px;color:#718096;margin:-5px 0 14px}
+@media(max-width:700px){.talaan-top-search{order:3;width:100%;max-width:none;margin:10px 0 0}.topbar{flex-wrap:wrap}.talaan-top-search input{min-width:0}.talaan-top-left{max-width:52%}.role-badge{margin-left:auto}}
 .talaan-search-row{display:flex;gap:8px;align-items:center;margin:0 0 15px}
 .talaan-search-row input{margin:0}
 .talaan-search-row button{width:auto;margin:0;padding:13px 16px}
@@ -4210,6 +4228,8 @@ function toggleTalaanMenu_() {
   if (!menu || !backdrop) return;
   const open = menu.classList.toggle('open');
   backdrop.classList.toggle('open', open);
+  const button = document.getElementById('talaanHamburger');
+  if (button) button.classList.toggle('menu-open', open);
 }
 
 function closeTalaanMenu_() {
@@ -4217,6 +4237,8 @@ function closeTalaanMenu_() {
   const backdrop = document.getElementById('talaanMenuBackdrop');
   if (menu) menu.classList.remove('open');
   if (backdrop) backdrop.classList.remove('open');
+  const button = document.getElementById('talaanHamburger');
+  if (button) button.classList.remove('menu-open');
 }
 
 function menuButton_(label, onclick, id, active) {
@@ -4271,7 +4293,9 @@ function renderTalaanMenu_(activeId) {
   html += '<button class="danger" onclick="talaanLogout_()">↪ Logout</button>';
   menu.innerHTML = html;
 
-  document.getElementById('talaanHamburger').classList.remove('hidden');
+  const hamburger = document.getElementById('talaanHamburger');
+  hamburger.classList.remove('hidden');
+  hamburger.classList.toggle('menu-open', menu.classList.contains('open'));
 }
 
 function getYearLabelClient_(level) {
@@ -4505,7 +4529,7 @@ async function openDashboard(role, suppliedSession) {
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
-  await loadDashboard();
+  await loadDashboard('__NO_DATE__');
 }
 
 async function loadDashboard(selectedDate = '') {
@@ -4516,7 +4540,7 @@ async function loadDashboard(selectedDate = '') {
   try {
     const data = await apiRequest('dashboard', selectedDate ? {date:selectedDate} : {});
     if (!data || data.success !== true) throw new Error(data?.error || 'Dashboard could not be loaded.');
-    if (selectedDate) data.selectedDate = selectedDate;
+    if (selectedDate && selectedDate !== '__NO_DATE__') data.selectedDate = selectedDate;
     dashboardData = data;
     showDashboardSheet();
   } catch (error) {
@@ -4544,7 +4568,7 @@ function showDashboardSheet() {
   const session = currentSession_();
   const role = session.role || currentRole || '';
 
-  let options = '';
+  let options = '<option value="" selected>&lt; SELECT DATE HERE &gt;</option>';
   (dashboardData?.events || []).slice().reverse().forEach(function(event){
     const selected = normalizeDateKey(event.date) === normalizeDateKey(selectedDate) ? 'selected' : '';
     options += '<option value="' + escapeAttribute(event.date) + '" ' + selected + '>' + escapeHtml(event.date) + ' — ' + escapeHtml(event.event) + '</option>';
@@ -4618,7 +4642,7 @@ async function changeDashboardDate(selectedDate) {
 
 async function talaanNavigate_(page, sheetName) {
   closeTalaanMenu_();
-  if (page === 'dashboard') { renderTalaanMenu_('dashboard'); await loadDashboard(); return; }
+  if (page === 'dashboard') { renderTalaanMenu_('dashboard'); await loadDashboard('__NO_DATE__'); return; }
   if (page === 'attendance') { await showAttendance(sheetName); return; }
   if (page === 'profile') { await showStudentProfile_(); return; }
   if (page === 'warnings') { await showWarnings_(); return; }
@@ -4683,6 +4707,51 @@ async function searchStudent_() {
       return '<div class="talaan-result-card"><div class="talaan-result-name">' + escapeHtml(s.name) + '</div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
+}
+
+async function searchStudentFromHeader_() {
+  const input = document.getElementById('talaanHeaderSearchInput');
+  const query = input?.value.trim() || '';
+  if (!query) {
+    input?.focus();
+    return;
+  }
+
+  closeTalaanMenu_();
+  renderTalaanMenu_('search');
+  setPage_('<div class="status">🔎 Searching for <strong>' + escapeHtml(query) + '</strong>...</div>');
+
+  try {
+    const data = await apiRequest('searchStudent', {query: query});
+    if (!data || data.success !== true) throw new Error(data?.error || 'Search failed.');
+
+    if (!data.students.length) {
+      setPage_('<div class="attendance-card talaan-search-page"><h2 class="section-heading">🔎 Student Search</h2><p class="talaan-search-hint">Keyword: <strong>' + escapeHtml(query) + '</strong></p><div class="status">No matching student found within your accessible records.</div></div>');
+      return;
+    }
+
+    let html = '<div class="attendance-card talaan-search-page"><h2 class="section-heading">🔎 Student Search Results</h2>' +
+      '<p class="talaan-search-hint">Keyword: <strong>' + escapeHtml(query) + '</strong> • ' + data.students.length + ' match' + (data.students.length === 1 ? '' : 'es') + '</p>';
+
+    html += data.students.map(function(s){
+      const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
+      const statusText = s.warning ? s.warningLevel : 'NO WARNING';
+      return '<div class="talaan-result-card">' +
+        '<div class="talaan-result-name">' + escapeHtml(s.name) + '</div>' +
+        '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div>' +
+        '<div class="talaan-stat-grid">' +
+          '<div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div>' +
+          '<div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div>' +
+          '<div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div>' +
+          '<div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div>' +
+        '</div></div>';
+    }).join('');
+
+    html += '</div>';
+    setPage_(html);
+  } catch (error) {
+    setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
+  }
 }
 
 async function showStudentProfile_() {
