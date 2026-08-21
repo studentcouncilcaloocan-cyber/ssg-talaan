@@ -4286,6 +4286,7 @@ function renderTalaanMenu_(activeId) {
   if (role === 'Secretary') {
     html += '<div class="talaan-menu-group">Secretary</div>';
     html += menuButton_('⚙️ Event Settings', "talaanNavigate_('settings')", 'menuSettings', activeId === 'settings');
+    html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
     html += menuButton_('📷 QR Scanner', "talaanNavigate_('scanner')", 'menuScanner', activeId === 'scanner');
   }
 
@@ -4647,6 +4648,7 @@ async function talaanNavigate_(page, sheetName) {
   if (page === 'profile') { await showStudentProfile_(); return; }
   if (page === 'warnings') { await showWarnings_(); return; }
   if (page === 'settings') { showSettings(); return; }
+  if (page === 'studentdirectory') { await showStudentDirectory_(); return; }
   if (page === 'scanner') { openScanner(); return; }
 }
 
@@ -4663,6 +4665,47 @@ async function showAttendance(sheetName) {
     const result = await apiRequest('attendance',{sheet:sheetName});
     if (!result || result.success !== true) throw new Error(result?.error || 'Attendance could not be loaded.');
     setPage_('<div class="attendance-card"><h2 class="section-heading">📋 ' + escapeHtml(getYearLabelClient_(level)) + ' Attendance</h2><p class="section-description">🟢 Present &nbsp;&nbsp; 🔴 Absent &nbsp;&nbsp; ⚪ Not Yet Held</p><div class="table-wrapper">' + createAttendanceTable(result.data) + '</div></div>');
+  } catch (error) {
+    setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
+  }
+}
+
+async function showStudentDirectory_() {
+  const session = currentSession_();
+  if (session.role !== 'Secretary') {
+    setPage_('<div class="status">❌ You are not authorized to view student TALAAN IDs.</div>');
+    return;
+  }
+
+  renderTalaanMenu_('studentdirectory');
+  setPage_('<div class="status">Loading student TALAAN IDs...</div>');
+
+  try {
+    const result = await apiRequest('studentdirectory');
+    if (!result || result.success !== true) throw new Error(result?.error || 'Student directory could not be loaded.');
+
+    let html = '<div class="attendance-card"><h2 class="section-heading">🪪 Student TALAAN IDs</h2>' +
+      '<p class="section-description">Secretary-only directory. Use these official IDs when distributing student account credentials.</p>';
+
+    if (!result.students.length) {
+      html += '<div class="status">No registered students found. Run <strong>generateTalaanStudentIds()</strong> in Apps Script first.</div></div>';
+      setPage_(html);
+      return;
+    }
+
+    html += '<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Section</th><th>Year</th><th>TALAAN ID</th><th>Account</th><th>Warning</th></tr></thead><tbody>';
+    result.students.forEach(function(s) {
+      const account = s.accountCreated ? 'Created' : 'Not yet created';
+      const warning = s.warning ? s.warningLevel : 'NO WARNING';
+      html += '<tr><td><strong>' + escapeHtml(s.name) + '</strong></td>' +
+        '<td>' + escapeHtml(s.section) + '</td>' +
+        '<td>' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</td>' +
+        '<td><strong style="letter-spacing:1px">' + escapeHtml(s.studentId) + '</strong></td>' +
+        '<td>' + escapeHtml(account) + '</td>' +
+        '<td>' + escapeHtml(warning) + '</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    setPage_(html);
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
