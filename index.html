@@ -3015,87 +3015,34 @@ function openScanner() {
 
 async function startScanner() {
 
-  if (
-    processing ||
-    scanning
-  ) {
-
+  if (scanning || processing) {
     return;
-
   }
 
-
   const reader =
-    document.getElementById(
-      'reader'
-    );
-
+    document.getElementById('reader');
 
   const loading =
-    document.getElementById(
-      'scanLoading'
-    );
-
-
-  const startButton =
-    document.getElementById(
-      'startScannerButton'
-    );
-
+    document.getElementById('scanLoading');
 
   if (!reader) {
     return;
   }
 
-
   try {
 
-    if (startButton) {
-
-      startButton.disabled =
-        true;
-
-      startButton.textContent =
-        '📷 CAMERA STARTING...';
-
-    }
-
-
     if (loading) {
-
       loading.textContent =
-        'Requesting camera access...';
-
+        '📷 Requesting camera access...';
     }
-
-
-    /*
-     * Remove an old scanner instance first.
-     */
-    if (scanner) {
-
-      try {
-        await scanner.clear();
-      }
-
-      catch (e) {}
-
-      scanner = null;
-
-    }
-
 
     scanner =
-      new Html5Qrcode(
-        'reader'
-      );
-
+      new Html5Qrcode('reader');
 
     await scanner.start(
 
       {
-        facingMode:
-          'environment'
+        facingMode: 'environment'
       },
 
       {
@@ -3107,83 +3054,48 @@ async function startScanner() {
         },
 
         aspectRatio: 1.0
-
       },
 
       function(decodedText) {
 
-        onScanSuccess(
-          decodedText
-        );
+        onScanSuccess(decodedText);
 
       },
 
       function(errorMessage) {
 
-        /*
-         * Normal while searching.
-         * Do not show frame-by-frame errors.
-         */
+        // Ignore normal QR scanning frame errors.
 
       }
 
     );
 
-
-    scanning =
-      true;
-
+    scanning = true;
 
     if (loading) {
-
       loading.textContent =
-        '📷 Camera active. Point the camera at the student QR code.';
-
-    }
-
-
-    if (startButton) {
-
-      startButton.textContent =
-        '📷 SCANNING...';
-
+        '📷 CAMERA ACTIVE — Point the camera at the student QR code.';
     }
 
   }
 
   catch (error) {
 
-    scanning =
-      false;
-
+    scanning = false;
 
     if (scanner) {
 
       try {
         await scanner.clear();
       }
-
       catch (e) {}
 
       scanner = null;
 
     }
 
-
-    if (startButton) {
-
-      startButton.disabled =
-        false;
-
-      startButton.textContent =
-        '📷 START QR SCANNER';
-
-    }
-
-
     let message =
       'Unable to open the camera.';
-
 
     if (
       error &&
@@ -3196,18 +3108,12 @@ async function startScanner() {
 
     }
 
-
     if (loading) {
-
       loading.textContent =
         message;
-
     }
 
-
-    showScanError(
-      message
-    );
+    showScanError(message);
 
   }
 
@@ -3218,110 +3124,56 @@ async function startScanner() {
    STOP SCANNER
 ===================================================== */
 
-async function stopScanner(
-  showStoppedMessage = true
-) {
+async function stopScanner(showMessage = true) {
 
-  clearTimeout(
-    scannerRestartTimer
-  );
-
-
-  const wasProcessing =
-    processing;
-
+  processing = false;
 
   if (scanner) {
 
     try {
 
       if (scanning) {
-
         await scanner.stop();
-
       }
 
     }
 
     catch (error) {
-
       console.log(
         'Scanner stop:',
         error
       );
-
     }
 
-
     try {
-
       await scanner.clear();
-
     }
 
     catch (error) {
-
       console.log(
         'Scanner clear:',
         error
       );
-
     }
 
   }
 
+  scanner = null;
+  scanning = false;
 
-  scanner =
-    null;
-
-  scanning =
-    false;
-
-
-  /*
-   * IMPORTANT:
-   * Do not reset processing here.
-   * onScanSuccess() needs the processing lock while
-   * the QR is being sent to Apps Script.
-   */
-  if (!wasProcessing) {
-
-    processing =
-      false;
-
+  if (!showMessage) {
+    return;
   }
-
 
   const loading =
     document.getElementById(
       'scanLoading'
     );
 
-
-  const startButton =
-    document.getElementById(
-      'startScannerButton'
-    );
-
-
-  if (
-    showStoppedMessage &&
-    loading
-  ) {
+  if (loading) {
 
     loading.textContent =
       'Scanner stopped.';
-
-  }
-
-
-  if (startButton) {
-
-    startButton.disabled =
-      false;
-
-    startButton.textContent =
-      '📷 START QR SCANNER';
 
   }
 
@@ -3397,44 +3249,43 @@ function restartScannerAfterResult() {
    QR SUCCESS
 ===================================================== */
 
-async function onScanSuccess(
-  decodedText
-) {
+async function onScanSuccess(decodedText) {
 
-  if (
-    processing
-  ) {
-
+  if (processing) {
     return;
-
   }
 
+  if (!scanner || !scanning) {
+    return;
+  }
 
-  processing =
-    true;
-
+  processing = true;
 
   const loading =
-    document.getElementById(
-      'scanLoading'
-    );
+    document.getElementById('scanLoading');
 
+  const result =
+    document.getElementById('scanResult');
 
   if (loading) {
-
     loading.textContent =
-      '✅ QR detected. Processing attendance...';
-
+      '⏳ QR detected. Processing attendance...';
   }
 
-
   /*
-   * Stop camera while Apps Script processes the record.
-   * processing remains TRUE.
+   * PAUSE CAMERA TEMPORARILY
+   * HINDI NATIN I-STOP.
    */
-  await stopScanner(
-    false
-  );
+  try {
+
+    if (scanner) {
+      scanner.pause(true);
+    }
+
+  }
+  catch (e) {
+    console.log('Scanner pause:', e);
+  }
 
 
   try {
@@ -3443,15 +3294,11 @@ async function onScanSuccess(
       await apiRequest(
         'record',
         {
-          qrText:
-            decodedText
+          qrText: decodedText
         }
       );
 
-
-    displayResult(
-      data
-    );
+    displayResult(data);
 
   }
 
@@ -3464,15 +3311,97 @@ async function onScanSuccess(
   }
 
 
-  processing =
-    false;
-
-
   /*
-   * Automatically reopen camera after displaying
-   * the result.
+   * WAIT A LITTLE SO THE RESULT CAN BE SEEN,
+   * THEN AUTOMATICALLY RESUME SCANNING.
    */
-  restartScannerAfterResult();
+  setTimeout(
+    async function() {
+
+      processing = false;
+
+      if (
+        scanner &&
+        scanning
+      ) {
+
+        try {
+
+          scanner.resume();
+
+          if (loading) {
+
+            loading.textContent =
+              '📷 CAMERA ACTIVE — Ready for next QR code.';
+
+          }
+
+        }
+
+        catch (error) {
+
+          console.log(
+            'Scanner resume error:',
+            error
+          );
+
+          /*
+           * If resume fails, restart camera automatically.
+           */
+          await restartScannerAutomatically();
+
+        }
+
+      }
+
+    },
+    1200
+  );
+
+}
+
+  async function restartScannerAutomatically() {
+
+  if (processing) {
+    return;
+  }
+
+  try {
+
+    if (scanner) {
+
+      try {
+        if (scanning) {
+          await scanner.stop();
+        }
+      }
+      catch (e) {}
+
+      try {
+        await scanner.clear();
+      }
+      catch (e) {}
+
+    }
+
+  }
+  catch (e) {}
+
+  scanner = null;
+  scanning = false;
+
+  setTimeout(function() {
+
+    if (
+      currentRole === 'Secretary' &&
+      document.getElementById('reader')
+    ) {
+
+      startScanner();
+
+    }
+
+  }, 300);
 
 }
 
