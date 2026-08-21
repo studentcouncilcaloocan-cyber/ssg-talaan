@@ -1100,7 +1100,7 @@ th {
 }
 
 .talaan-id-card-preview {
-  width:min(100%,430px);
+  width:min(100%,340px);
   margin:0 auto;
   background:#fff;
   border-radius:20px;
@@ -1126,8 +1126,8 @@ th {
 }
 
 .talaan-id-modal-card {
-  width:min(94vw,520px);
-  max-height:94vh;
+  width:min(92vw,400px);
+  max-height:92vh;
   overflow:auto;
   background:#fff;
   border-radius:22px;
@@ -1189,10 +1189,25 @@ th {
 }
 
 .talaan-id-profile-card {
-  width:min(100%,430px);
+  width:min(100%,340px);
 }
 
 @media (max-width:650px) {
+  .talaan-id-modal {
+    padding:12px;
+  }
+  .talaan-id-modal-card {
+    width:min(92vw,360px);
+    padding:14px;
+    border-radius:18px;
+  }
+  .talaan-id-card-preview {
+    width:min(78vw,300px);
+  }
+  .talaan-id-modal-actions button {
+    padding:10px;
+    font-size:12px;
+  }
   .talaan-id-student {
     grid-template-columns:1fr;
   }
