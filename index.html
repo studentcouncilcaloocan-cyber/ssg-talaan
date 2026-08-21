@@ -1595,6 +1595,23 @@ async function loadDashboard(
     }
 
 
+    /*
+     * IMPORTANT:
+     * Kapag pumili ang user ng specific date,
+     * iyon mismo ang gagamitin natin bilang
+     * selectedDate ng UI.
+     *
+     * HINDI natin hahayaang mapalitan ito ng
+     * stale/previous selectedDate mula sa backend.
+     */
+    if (selectedDate) {
+
+      data.selectedDate =
+        selectedDate;
+
+    }
+
+
     dashboardData =
       data;
 
@@ -1887,8 +1904,12 @@ async function changeDashboardDate(
   selectedDate
 ) {
 
+  if (!selectedDate) {
+    return;
+  }
+
   await loadDashboard(
-    selectedDate || ''
+    selectedDate
   );
 
 }
