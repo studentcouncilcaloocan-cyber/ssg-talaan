@@ -1261,7 +1261,7 @@ th {
     background:#fff;
     opacity:1;
     visibility:visible;
-    transition:opacity .35s ease, visibility .35s ease;
+    transition:none;
   }
   #talaanLoadingScreen.hide{
     opacity:0;
@@ -1308,14 +1308,10 @@ th {
 </style>
 <script>
 (function(){
-  function hideTalaanLoading(){
-    var screen=document.getElementById('talaanLoadingScreen');
-    if(screen) screen.classList.add('hide');
-  }
-  window.addEventListener('load', function(){
-    setTimeout(hideTalaanLoading, 450);
-  });
-  setTimeout(hideTalaanLoading, 5000);
+  // The loading screen is NOT shown on normal refresh/page load.
+  // It is controlled explicitly by showTalaanLoading_() after login.
+  var screen=document.getElementById('talaanLoadingScreen');
+  if(screen) screen.classList.add('hide');
 })();
 </script>
 
@@ -3168,6 +3164,13 @@ async function saveSettingRow(
               )
               .value
               .trim(),
+
+          type:
+            document
+              .getElementById(
+                'type_' + row
+              )
+              .value,
 
           status:
             document
@@ -5122,14 +5125,17 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   try {
     await loadDashboard('__NO_DATE__');
 
-    // Loading screen remains in front until the welcome display is ready.
-    hideTalaanLoading_();
-    await new Promise(function(resolve){ setTimeout(resolve, 120); });
-
-    // Every successful login gets the welcome display before the site.
-    await showTalaanTransition_(currentSession_(), {
-      accountCreated: !!transitionOptions.accountCreated
-    });
+    // The welcome display is only for a fresh successful login.
+    // A normal refresh/session restore goes straight to the site.
+    if (!transitionOptions.skipTransition) {
+      hideTalaanLoading_();
+      await new Promise(function(resolve){ setTimeout(resolve, 120); });
+      await showTalaanTransition_(currentSession_(), {
+        accountCreated: !!transitionOptions.accountCreated
+      });
+    } else {
+      hideTalaanLoading_();
+    }
 
     // Only NOW reveal the actual TALAAN application.
     document.getElementById('appScreen')?.classList.remove('hidden');
@@ -6129,7 +6135,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
-    openDashboard(currentRole, stored.session);
+    openDashboard(currentRole, stored.session, {skipTransition:true, restoreSession:true});
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
