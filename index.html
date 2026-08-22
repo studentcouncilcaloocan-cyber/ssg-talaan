@@ -646,7 +646,7 @@ th {
 .setting-grid {
   display: grid;
   grid-template-columns:
-    repeat(4,1fr);
+    repeat(5,1fr);
   gap: 10px;
 }
 
@@ -1620,6 +1620,30 @@ th {
     <div class="form-row">
 
       <label>
+        Event Type
+      </label>
+
+      <select id="newType">
+
+        <option value="Physical">
+          Physical
+        </option>
+
+        <option value="Online">
+          Online
+        </option>
+
+        <option value="Hybrid">
+          Hybrid
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="form-row">
+
+      <label>
         Status
       </label>
 
@@ -2228,6 +2252,8 @@ function showDashboardSheet() {
 
         <div class="event-pill">
           ${escapeHtml(selectedEvent.event || 'Event')}
+          ${selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : ''}
+          ${selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : ''}
         </div>
 
       </div>
@@ -4069,6 +4095,20 @@ function displayResult(
 
   if (
     data.decision ===
+    'CLOSED'
+  ) {
+    result.className = 'result error';
+    result.innerHTML = `
+      <div class="student-name">🔒 ATTENDANCE CLOSED</div>
+      <div class="detail"><strong>Event:</strong> ${escapeHtml(data.event || 'Attendance Event')}</div>
+      <div class="detail"><strong>Cut-off:</strong> ${escapeHtml(data.cutoff || 'Reached')}</div>
+      <div class="detail">Attendance can no longer be recorded for this event.</div>
+    `;
+    return;
+  }
+
+  if (
+    data.decision ===
     'NOT_YET_HELD'
   ) {
 
@@ -5148,7 +5188,7 @@ function showDashboardSheet() {
     '<p>SSG TALAAN • Event Attendance Dashboard</p>' +
     '<div class="dashboard-controls">' +
       '<div class="control"><label>📅 Event Date</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
-      '<div class="event-pill">' + escapeHtml(selectedEvent.event || 'Attendance Record') + '</div>' +
+      '<div class="event-pill">' + escapeHtml(selectedEvent.event || 'Attendance Record') + (selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : '') + (selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : '') + '</div>' +
     '</div>' +
   '</div>';
 
@@ -5924,14 +5964,21 @@ function showSettings() {
   if (currentRole !== 'Secretary') return;
   renderTalaanMenu_('settings');
   const data = dashboardData?.settings || [];
-  if (!data.length) { setPage_('<div class="attendance-card"><h2 class="section-heading">⚙️ Event Settings</h2><p>No settings found.</p></div>'); return; }
+  if (!data.length) {
+    setPage_('<div class="attendance-card"><h2 class="section-heading">⚙️ Event Settings</h2><p>No settings found.</p></div>');
+    return;
+  }
 
   const headers = data[0];
   const eventIndex = findHeader(headers,['EVENT','EVENT TITLE']);
   const dateIndex = findHeader(headers,['DATE','EVENT DATE']);
   const cutoffIndex = findHeader(headers,['CUT-OFF','CUTOFF','CUT OFF']);
   const statusIndex = findHeader(headers,['STATUS']);
-  let html = '<div><h2 class="section-heading">⚙️ Event Settings</h2><p class="section-description">Manage existing events, add new events, or remove an event.</p><div class="settings-toolbar"><button class="add-button" onclick="openAddEvent()">＋ ADD EVENT</button></div><div class="settings-list">';
+  const typeIndex = findHeader(headers,['TYPE','EVENT TYPE']);
+
+  let html = '<div><h2 class="section-heading">⚙️ Event Settings</h2>' +
+    '<p class="section-description">Manage existing events, add new events, or remove an event. The cut-off automatically changes the event status to <strong>Closed</strong> when reached.</p>' +
+    '<div class="settings-toolbar"><button class="add-button" onclick="openAddEvent()">＋ ADD EVENT</button></div><div class="settings-list">';
 
   for (let r=1;r<data.length;r++) {
     const row=r+1;
@@ -5939,11 +5986,25 @@ function showSettings() {
     const date=dateIndex>=0?data[r][dateIndex]:'';
     const cutoff=cutoffIndex>=0?data[r][cutoffIndex]:'';
     const status=statusIndex>=0?data[r][statusIndex]:'';
+    const type=typeIndex>=0?data[r][typeIndex]:'';
+
+    const normalizedStatus = String(status || '').toLowerCase();
+    const statusBadge = normalizedStatus === 'closed' ? '🔒 CLOSED' : (status || '—');
+
     html += '<div class="setting-card"><div class="setting-top"><div class="setting-title">' + escapeHtml(event||'Untitled Event') + '</div><div class="row-badge">ROW ' + row + '</div></div><div class="setting-grid">' +
       '<div class="setting-field"><label>EVENT</label><input id="event_' + row + '" value="' + escapeAttribute(event) + '"></div>' +
       '<div class="setting-field"><label>DATE</label><input id="date_' + row + '" value="' + escapeAttribute(date) + '"></div>' +
-      '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '"></div>' +
-      '<div class="setting-field"><label>STATUS</label><input id="status_' + row + '" value="' + escapeAttribute(status) + '"></div>' +
+      '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '" placeholder="7:30 AM"></div>' +
+      '<div class="setting-field"><label>EVENT TYPE</label><select id="type_' + row + '">' +
+        '<option value="Physical" ' + (String(type).toLowerCase()==='physical'?'selected':'') + '>Physical</option>' +
+        '<option value="Online" ' + (String(type).toLowerCase()==='online'?'selected':'') + '>Online</option>' +
+        '<option value="Hybrid" ' + (String(type).toLowerCase()==='hybrid'?'selected':'') + '>Hybrid</option>' +
+      '</select></div>' +
+      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '">' +
+        '<option value="Active" ' + (normalizedStatus==='active'?'selected':'') + '>Active</option>' +
+        '<option value="Scheduled" ' + (normalizedStatus==='scheduled'?'selected':'') + '>Scheduled</option>' +
+        '<option value="Closed" ' + (normalizedStatus==='closed'?'selected':'') + '>Closed</option>' +
+      '</select><div style="font-size:10px;color:#718096;margin-top:4px">' + escapeHtml(statusBadge) + '</div></div>' +
       '</div><div class="modal-actions"><button class="save-button" onclick="saveSettingRow(' + row + ')">💾 SAVE EVENT</button><button class="save-button" style="background:#a82222" onclick="deleteEventRow_(' + row + ')">🗑 DELETE</button></div></div>';
   }
   html += '</div></div>';
@@ -5953,7 +6014,14 @@ function showSettings() {
 async function saveSettingRow(row) {
   if (currentRole !== 'Secretary') return;
   try {
-    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||''});
+    const result = await apiRequest('updateSettings', {
+      row: row,
+      event: document.getElementById('event_'+row)?.value.trim() || '',
+      date: document.getElementById('date_'+row)?.value.trim() || '',
+      cutoff: document.getElementById('cutoff_'+row)?.value.trim() || '',
+      type: document.getElementById('type_'+row)?.value || 'Physical',
+      status: document.getElementById('status_'+row)?.value || 'Active'
+    });
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
     alert('✅ Event updated successfully.');
     await refreshDashboardData();
@@ -5978,13 +6046,18 @@ async function addEvent() {
   const event=document.getElementById('newEvent')?.value.trim()||'';
   const date=document.getElementById('newDate')?.value.trim()||'';
   const cutoff=document.getElementById('newCutoff')?.value.trim()||'';
-  const status=document.getElementById('newStatus')?.value.trim()||'';
+  const type=document.getElementById('newType')?.value||'Physical';
+  const status=document.getElementById('newStatus')?.value||'Scheduled';
   if (!event || !date) { alert('Please provide the event title and date.'); return; }
   try {
-    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status});
+    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,type:type,status:status});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
     alert('✅ New event added successfully.');
-    document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
+    document.getElementById('newEvent').value='';
+    document.getElementById('newDate').value='';
+    document.getElementById('newCutoff').value='';
+    document.getElementById('newType').value='Physical';
+    document.getElementById('newStatus').value='Scheduled';
     closeAddEvent();await refreshDashboardData();showSettings();
   } catch(error){alert('❌ Unable to add event.\n\n'+error.message);}
 }
