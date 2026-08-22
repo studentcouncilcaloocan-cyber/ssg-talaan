@@ -4937,6 +4937,9 @@ function showTalaanTransition_(session, options){
   const s = session || {};
   const name = s.name || (s.role === 'Secretary' ? 'Secretary' : s.role === 'Teacher' ? 'Teacher' : 'User');
   const section = s.section || s.classSection || s.adviserSection || s.course || s.yearLevel || '';
+  const displayLine = s.role === 'Secretary'
+    ? (s.position || 'Secretary')
+    : section;
   const role = s.role || currentRole || 'User';
 
   const kicker = document.getElementById('talaanTransitionKicker');
@@ -4949,7 +4952,7 @@ function showTalaanTransition_(session, options){
   kicker.textContent = options.accountCreated ? 'SSG TALAAN' : 'TALAAN';
   title.textContent = options.accountCreated ? 'Your Account is Now Created!' : 'Welcome,';
   nameEl.textContent = options.accountCreated ? name : name;
-  sectionEl.textContent = options.accountCreated ? 'You can now access your TALAAN account.' : section;
+  sectionEl.textContent = options.accountCreated ? 'You can now access your TALAAN account.' : displayLine;
   roleEl.textContent = role;
 
   overlay.classList.remove('hidden');
