@@ -4966,6 +4966,10 @@ async function submitTalaanAuth_() {
   const status = document.getElementById('talaanAuthStatus');
   if (status) status.textContent = 'Checking access...';
 
+  // Keep the actual TALAAN site completely hidden while authentication
+  // and the post-login dashboard data are being prepared.
+  showTalaanLoading_();
+
   try {
     let data;
 
@@ -4997,11 +5001,11 @@ async function submitTalaanAuth_() {
     secretaryCodeSession = data.session.code || '';
     const wasAccountCreated = (authRole === 'Student' && studentAuthMode === 'create');
     closeAuthModal_();
-    if (wasAccountCreated) {
-      await showTalaanTransition_(data.session, {accountCreated:true});
-    }
-    await openDashboard(currentRole, data.session);
+    await openDashboard(currentRole, data.session, {
+      accountCreated: wasAccountCreated
+    });
   } catch (error) {
+    hideTalaanLoading_();
     if (status) status.textContent = '❌ ' + (error.message || error);
   }
 }
@@ -5039,21 +5043,57 @@ function backToWelcome() {
   closeAuthModal_();
 }
 
-async function openDashboard(role, suppliedSession) {
+function showTalaanLoading_(){
+  const screen = document.getElementById('talaanLoadingScreen');
+  if (!screen) return;
+  screen.classList.remove('hide');
+  screen.style.zIndex = '100001';
+}
+
+function hideTalaanLoading_(){
+  const screen = document.getElementById('talaanLoadingScreen');
+  if (!screen) return;
+  screen.classList.add('hide');
+}
+
+async function openDashboard(role, suppliedSession, transitionOptions) {
   currentRole = role;
   if (suppliedSession) talaanSession = talaanSession || {token:'',session:suppliedSession};
 
+  transitionOptions = transitionOptions || {};
+
+  // IMPORTANT: keep the real application hidden until everything needed
+  // for the dashboard has finished loading.
   document.getElementById('welcomeScreen')?.classList.add('hidden');
   document.getElementById('loginScreen')?.classList.add('hidden');
-  document.getElementById('appScreen')?.classList.remove('hidden');
+  document.getElementById('appScreen')?.classList.add('hidden');
+
+  showTalaanLoading_();
 
   const badge = document.getElementById('roleBadge');
   if (badge) badge.textContent = role;
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
-  await loadDashboard('__NO_DATE__');
-  await showTalaanTransition_(currentSession_());
+
+  try {
+    await loadDashboard('__NO_DATE__');
+
+    // Loading screen remains in front until the welcome display is ready.
+    hideTalaanLoading_();
+    await new Promise(function(resolve){ setTimeout(resolve, 120); });
+
+    // Every successful login gets the welcome display before the site.
+    await showTalaanTransition_(currentSession_(), {
+      accountCreated: !!transitionOptions.accountCreated
+    });
+
+    // Only NOW reveal the actual TALAAN application.
+    document.getElementById('appScreen')?.classList.remove('hidden');
+  } catch (error) {
+    hideTalaanLoading_();
+    throw error;
+  }
 }
 
 async function loadDashboard(selectedDate = '') {
