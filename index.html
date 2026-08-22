@@ -1238,6 +1238,41 @@ th {
 
 </head>
 
+<script>
+/* =====================================================
+   EARLY SESSION RESTORE GUARD
+   Prevents the welcome/app UI from flashing before the
+   saved session is restored on refresh.
+===================================================== */
+(function(){
+  try {
+    const raw = localStorage.getItem('talaanSession');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.token && parsed.session &&
+          (!parsed.session.expiresAt || Number(parsed.session.expiresAt) > Date.now())) {
+        document.documentElement.classList.add('talaan-session-restore');
+        window.__talaanSessionRestorePending = true;
+      }
+    }
+  } catch(e) {}
+})();
+</script>
+
+<style>
+/* On refresh with a valid session, the loading screen is the ONLY thing visible
+   until the session/dashboard restoration finishes. */
+html.talaan-session-restore #welcomeScreen,
+html.talaan-session-restore #loginScreen,
+html.talaan-session-restore #appScreen {
+  display:none !important;
+}
+html.talaan-session-restore #talaanLoadingScreen {
+  display:flex !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+</style>
 
 <body>
 
@@ -1261,7 +1296,7 @@ th {
     background:#fff;
     opacity:1;
     visibility:visible;
-    transition:none;
+    transition:opacity .35s ease, visibility .35s ease;
   }
   #talaanLoadingScreen.hide{
     opacity:0;
@@ -1308,10 +1343,15 @@ th {
 </style>
 <script>
 (function(){
-  // The loading screen is NOT shown on normal refresh/page load.
-  // It is controlled explicitly by showTalaanLoading_() after login.
-  var screen=document.getElementById('talaanLoadingScreen');
-  if(screen) screen.classList.add('hide');
+  function hideTalaanLoading(){
+    if (window.__talaanSessionRestorePending) return;
+    var screen=document.getElementById('talaanLoadingScreen');
+    if(screen) screen.classList.add('hide');
+  }
+  window.addEventListener('load', function(){
+    setTimeout(hideTalaanLoading, 450);
+  });
+  setTimeout(hideTalaanLoading, 5000);
 })();
 </script>
 
@@ -5048,7 +5088,8 @@ async function submitTalaanAuth_() {
     const wasAccountCreated = (authRole === 'Student' && studentAuthMode === 'create');
     closeAuthModal_();
     await openDashboard(currentRole, data.session, {
-      accountCreated: wasAccountCreated
+      accountCreated: wasAccountCreated,
+      showWelcome: true
     });
   } catch (error) {
     hideTalaanLoading_();
@@ -5125,20 +5166,21 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   try {
     await loadDashboard('__NO_DATE__');
 
-    // The welcome display is only for a fresh successful login.
-    // A normal refresh/session restore goes straight to the site.
-    if (!transitionOptions.skipTransition) {
+    // A welcome display is ONLY part of a fresh login/account-creation flow.
+    // A normal page refresh must never replay it.
+    if (transitionOptions.showWelcome === true) {
       hideTalaanLoading_();
-      await new Promise(function(resolve){ setTimeout(resolve, 120); });
+      await new Promise(function(resolve){ setTimeout(resolve, 80); });
       await showTalaanTransition_(currentSession_(), {
         accountCreated: !!transitionOptions.accountCreated
       });
-    } else {
-      hideTalaanLoading_();
     }
 
     // Only NOW reveal the actual TALAAN application.
     document.getElementById('appScreen')?.classList.remove('hidden');
+    hideTalaanLoading_();
+    document.documentElement.classList.remove('talaan-session-restore');
+    window.__talaanSessionRestorePending = false;
   } catch (error) {
     hideTalaanLoading_();
     throw error;
@@ -6135,7 +6177,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
-    openDashboard(currentRole, stored.session, {skipTransition:true, restoreSession:true});
+    openDashboard(currentRole, stored.session, {showWelcome: false});
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
