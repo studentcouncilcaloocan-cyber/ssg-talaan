@@ -5170,7 +5170,6 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
     // A normal page refresh must never replay it.
     if (transitionOptions.showWelcome === true) {
       hideTalaanLoading_();
-      await new Promise(function(resolve){ setTimeout(resolve, 80); });
       await showTalaanTransition_(currentSession_(), {
         accountCreated: !!transitionOptions.accountCreated
       });
