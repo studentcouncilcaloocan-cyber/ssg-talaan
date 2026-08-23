@@ -4710,6 +4710,10 @@ function renderTalaanMenu_(activeId) {
         html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
       });
     }
+  } else {
+    const lvl = session.yearLevel;
+    html += '<div class="talaan-menu-group">Attendance</div>';
+    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
   }
 
   if (role === 'Student') {
