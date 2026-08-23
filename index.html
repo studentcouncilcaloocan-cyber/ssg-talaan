@@ -1574,9 +1574,12 @@ th {
           Guest
         </div>
 
-        <div class="talaan-top-search" id="talaanTopSearch">
-          <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-          <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+        <div class="talaan-search-shell">
+          <button id="talaanMobileSearchToggle" class="talaan-mobile-search-toggle" type="button" aria-label="Open search" onclick="toggleHeaderSearch_()">🔍</button>
+          <div class="talaan-top-search" id="talaanTopSearch">
+            <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+            <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+          </div>
         </div>
       </div>
 
@@ -1669,6 +1672,15 @@ th {
 
       </select>
 
+    </div>
+
+    <div class="form-row">
+      <label>Event Type</label>
+      <select id="newType">
+        <option value="Physical">Physical</option>
+        <option value="Online">Online</option>
+        <option value="Hybrid">Hybrid</option>
+      </select>
     </div>
 
     <div class="modal-actions">
@@ -5143,6 +5155,8 @@ async function loadDashboard(selectedDate = '') {
   }
 }
 
+function normalizeTextClient_(value){ return String(value == null ? '' : value).trim().toLowerCase(); }
+
 function renderWelcomeName_() {
   const s = currentSession_();
   if (s.name) return s.name;
@@ -5209,6 +5223,8 @@ function showDashboardSheet() {
     '<div class="event-attendance-heading">' +
       '<div><h3>EVENT ATTENDANCE DASHBOARD</h3><div class="event-attendance-sub">ATTENDANCE RECORD' +
         (selectedEvent.event ? ' • ' + escapeHtml(selectedEvent.event) : '') +
+        (selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : '') +
+        (selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : '') +
       '</div></div>' +
       '<div class="event-attendance-controls"><label>Event Date</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
     '</div>';
@@ -5287,7 +5303,9 @@ async function showAttendance(sheetName) {
   try {
     const result = await apiRequest('attendance',{sheet:sheetName});
     if (!result || result.success !== true) throw new Error(result?.error || 'Attendance could not be loaded.');
-    setPage_('<div class="attendance-card"><h2 class="section-heading">📋 ' + escapeHtml(getYearLabelClient_(level)) + ' Attendance</h2><p class="section-description">🟢 Present &nbsp;&nbsp; 🔴 Absent &nbsp;&nbsp; ⚪ Not Yet Held</p><div class="table-wrapper">' + createAttendanceTable(result.data) + '</div></div>');
+    const attendanceEvents = (dashboardData?.events || []).filter(function(ev){ return normalizeDateKey(ev.date); });
+    const eventMeta = attendanceEvents.length ? '<div class="attendance-event-meta">' + attendanceEvents.map(function(ev){ return '<span><strong>' + escapeHtml(ev.date || '') + '</strong> ' + escapeHtml(ev.event || '') + (ev.type ? ' • ' + escapeHtml(ev.type) : '') + (ev.status ? ' • ' + escapeHtml(ev.status) : '') + '</span>'; }).join('') + '</div>' : '';
+    setPage_('<div class="attendance-card"><h2 class="section-heading">📋 ' + escapeHtml(getYearLabelClient_(level)) + ' Attendance</h2><p class="section-description">🟢 Present &nbsp;&nbsp; 🔴 Absent &nbsp;&nbsp; ⚪ Not Yet Held</p>' + eventMeta + '<div class="table-wrapper">' + createAttendanceTable(result.data) + '</div></div>');
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
@@ -6001,11 +6019,22 @@ function showSettings() {
     const date=dateIndex>=0?data[r][dateIndex]:'';
     const cutoff=cutoffIndex>=0?data[r][cutoffIndex]:'';
     const status=statusIndex>=0?data[r][statusIndex]:'';
+    const typeIndex = findHeader(headers,['TYPE','EVENT TYPE','EVENTTYPE']);
+    const type = typeIndex>=0?data[r][typeIndex]:'Physical';
     html += '<div class="setting-card"><div class="setting-top"><div class="setting-title">' + escapeHtml(event||'Untitled Event') + '</div><div class="row-badge">ROW ' + row + '</div></div><div class="setting-grid">' +
       '<div class="setting-field"><label>EVENT</label><input id="event_' + row + '" value="' + escapeAttribute(event) + '"></div>' +
       '<div class="setting-field"><label>DATE</label><input id="date_' + row + '" value="' + escapeAttribute(date) + '"></div>' +
       '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '"></div>' +
-      '<div class="setting-field"><label>STATUS</label><input id="status_' + row + '" value="' + escapeAttribute(status) + '"></div>' +
+      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '">' +
+        '<option value="Scheduled" ' + (normalizeTextClient_(status)==='scheduled'?'selected':'') + '>Scheduled</option>' +
+        '<option value="Active" ' + (normalizeTextClient_(status)==='active'?'selected':'') + '>Active</option>' +
+        '<option value="Closed" ' + (normalizeTextClient_(status)==='closed'?'selected':'') + '>Closed</option>' +
+      '</select></div>' +
+      '<div class="setting-field"><label>EVENT TYPE</label><select id="type_' + row + '">' +
+        '<option value="Physical" ' + (normalizeTextClient_(type)==='physical'?'selected':'') + '>Physical</option>' +
+        '<option value="Online" ' + (normalizeTextClient_(type)==='online'?'selected':'') + '>Online</option>' +
+        '<option value="Hybrid" ' + (normalizeTextClient_(type)==='hybrid'?'selected':'') + '>Hybrid</option>' +
+      '</select></div>' +
       '</div><div class="modal-actions"><button class="save-button" onclick="saveSettingRow(' + row + ')">💾 SAVE EVENT</button><button class="save-button" style="background:#a82222" onclick="deleteEventRow_(' + row + ')">🗑 DELETE</button></div></div>';
   }
   html += '</div></div>';
@@ -6015,7 +6044,7 @@ function showSettings() {
 async function saveSettingRow(row) {
   if (currentRole !== 'Secretary') return;
   try {
-    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||''});
+    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||'',type:document.getElementById('type_'+row)?.value.trim()||'Physical'});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
     alert('✅ Event updated successfully.');
     await refreshDashboardData();
@@ -6025,7 +6054,7 @@ async function saveSettingRow(row) {
 
 async function deleteEventRow_(row) {
   if (currentRole !== 'Secretary') return;
-  if (!confirm('Delete this event from Event Settings? Existing attendance columns/records will be preserved.')) return;
+  if (!confirm('Delete this event from Event Settings? Its matching attendance date column will also be removed from all attendance tabs.')) return;
   try {
     const result = await apiRequest('deleteEvent',{row:row});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to delete event.');
@@ -6041,9 +6070,10 @@ async function addEvent() {
   const date=document.getElementById('newDate')?.value.trim()||'';
   const cutoff=document.getElementById('newCutoff')?.value.trim()||'';
   const status=document.getElementById('newStatus')?.value.trim()||'';
+  const type=document.getElementById('newType')?.value.trim()||'Physical';
   if (!event || !date) { alert('Please provide the event title and date.'); return; }
   try {
-    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status});
+    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status,type:type});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
     alert('✅ New event added successfully.');
     document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
@@ -6216,6 +6246,34 @@ window.addEventListener('DOMContentLoaded', function(){
   .talaan-transition-overlay{padding:18px}
   .talaan-transition-section{font-size:14px}
 }
+
+/* FINAL DASHBOARD / MOBILE HEADER TWEAKS */
+.dashboard-main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:18px;align-items:start}
+.dashboard-left-column{min-width:0}
+.dashboard-right-column{min-width:0}
+.dashboard-right-column .upcoming-activities-section{margin-bottom:0}
+.event-attendance-section{min-height:520px}
+.upcoming-activities-section{height:100%}
+.upcoming-activities-box{height:390px}
+@media(max-width:1050px){.dashboard-main-grid{grid-template-columns:minmax(0,1fr) 300px}.event-attendance-section{min-height:500px}}
+@media(max-width:820px){.dashboard-main-grid{grid-template-columns:1fr}.dashboard-right-column{order:2}.dashboard-left-column{order:1}.event-attendance-section{min-height:0}.upcoming-activities-box{height:300px}}
+@media(max-width:700px){
+  .topbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:8px 12px 8px 58px!important;min-height:82px!important;position:relative!important}
+  .talaan-top-left{display:flex!important;align-items:center!important;gap:8px!important;padding-left:0!important;max-width:none!important;min-width:0!important;flex:1 1 auto!important}
+  .talaan-header-logo{display:block!important;width:auto!important;height:68px!important;max-width:92px!important;margin:0!important;object-fit:contain!important}
+  .talaan-top-left>div{display:none!important}
+  .talaan-hamburger{position:absolute!important;left:10px!important;top:18px!important;width:42px!important;height:42px!important;font-size:21px!important}
+  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:6px!important;flex:0 0 auto!important}
+  .role-badge{height:26px!important;min-height:26px!important;padding:5px 9px!important;font-size:10px!important;white-space:nowrap!important;align-self:auto!important}
+  .talaan-search-shell{width:auto!important}
+  .talaan-mobile-search-toggle{width:40px!important;height:40px!important}
+  .talaan-top-search{position:absolute!important;right:12px!important;top:52px!important;width:0!important;max-width:calc(100vw - 24px)!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;transform:translateX(10px)!important;transition:width .3s ease,opacity .2s ease,transform .3s ease!important}
+  .talaan-top-search.open{width:min(78vw,340px)!important;opacity:1!important;pointer-events:auto!important;transform:translateX(0)!important}
+  .talaan-top-search input{width:100%!important;height:40px!important;min-width:0!important;padding:0 12px!important;opacity:1!important;border:1px solid #dce3ee!important;border-radius:12px!important}
+  .talaan-top-search button{display:none!important}
+}
+
+.attendance-event-meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.attendance-event-meta span{background:#f5f7fb;border:1px solid #e3e8f1;border-radius:10px;padding:7px 10px;font-size:11px;color:#526174}.attendance-event-meta strong{color:#17266b}
 </style>
 
 </body>
