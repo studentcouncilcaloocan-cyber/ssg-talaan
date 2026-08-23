@@ -3339,22 +3339,23 @@ async function addEvent() {
 
 async function refreshDashboardData() {
 
-  const data =
-    await apiRequest(
-      'dashboard'
-    );
+  // Always request a fresh dashboard snapshot after a completed action.
+  // This prevents a cached Apps Script response from making the UI appear
+  // stale after adding, editing, or deleting data.
+  const data = await apiRequest('dashboard', {
+    _t: Date.now()
+  });
 
-
-  if (
-    data &&
-    data.success === true
-  ) {
-
-    dashboardData =
-      data;
-
+  if (data && data.success === true) {
+    dashboardData = data;
+    return data;
   }
 
+  throw new Error(
+    data && data.error
+      ? data.error
+      : 'Unable to refresh TALAAN data.'
+  );
 }
 
 
@@ -6144,8 +6145,12 @@ async function addEvent() {
 }
 
 async function refreshDashboardData() {
-  const data = await apiRequest('dashboard');
-  if (data && data.success === true) dashboardData=data;
+  const data = await apiRequest('dashboard', {_t: Date.now()});
+  if (data && data.success === true) {
+    dashboardData = data;
+    return data;
+  }
+  throw new Error(data && data.error ? data.error : 'Unable to refresh TALAAN data.');
 }
 
 function openScanner() {
