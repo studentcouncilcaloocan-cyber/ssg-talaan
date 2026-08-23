@@ -297,36 +297,6 @@ select:focus {
    DASHBOARD HERO
 ===================================================== */
 
-
-/* =====================================================
-   DASHBOARD GREETING + UPCOMING ACTIVITIES
-===================================================== */
-.dashboard-greeting-box{
-  background:linear-gradient(135deg,#17266b,#285899);
-  color:#fff;
-  border-radius:20px;
-  padding:28px;
-  margin-bottom:18px;
-  box-shadow:0 10px 30px rgba(23,38,107,.18);
-}
-.dashboard-greeting-kicker{font-size:12px;font-weight:900;letter-spacing:1.4px;opacity:.8;text-transform:uppercase}
-.dashboard-greeting-name{font-size:32px;font-weight:900;margin:3px 0 5px}
-.dashboard-greeting-meta{font-size:13px;opacity:.82;line-height:1.55}
-.upcoming-activities-section{background:#fff;border-radius:20px;padding:22px;box-shadow:0 5px 20px rgba(20,43,75,.07);margin-bottom:18px}
-.upcoming-activities-box{height:260px;overflow-y:auto;border:1px solid #e5eaf2;border-radius:16px;background:#f8fafc;padding:18px}
-.upcoming-empty{height:100%;display:flex;align-items:center;justify-content:center;color:#718096;font-size:14px;font-weight:700;text-align:center}
-.upcoming-item{padding:3px 2px 16px;margin-bottom:16px;border-bottom:1px solid #dfe5ee}
-.upcoming-item:last-child{border-bottom:0;margin-bottom:0;padding-bottom:2px}
-.upcoming-event-name{font-size:17px;font-weight:900;color:#17266b;margin-bottom:7px}
-.upcoming-detail{font-size:13px;color:#526174;line-height:1.55}
-.event-attendance-section{background:#f4f7fb;border-radius:20px;padding:22px;margin-top:0}
-.event-attendance-heading{display:flex;justify-content:space-between;align-items:end;gap:15px;flex-wrap:wrap;margin-bottom:16px}
-.event-attendance-heading h3{margin:0;color:#17266b;font-size:21px;font-weight:900}
-.event-attendance-sub{font-size:12px;color:#718096;margin-top:3px}
-.event-attendance-controls{min-width:250px}
-.event-attendance-controls label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.7px;font-weight:800;color:#718096;margin-bottom:5px}
-.event-attendance-controls select{margin:0;background:#fff}
-
 .dashboard-header {
   background:
     linear-gradient(
@@ -1574,12 +1544,9 @@ th {
           Guest
         </div>
 
-        <div class="talaan-search-shell">
-          <button id="talaanMobileSearchToggle" class="talaan-mobile-search-toggle" type="button" aria-label="Open search" onclick="toggleHeaderSearch_()">🔍</button>
-          <div class="talaan-top-search" id="talaanTopSearch">
-            <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-            <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
-          </div>
+        <div class="talaan-top-search" id="talaanTopSearch">
+          <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
+          <button type="button" aria-label="Search" onclick="handleHeaderSearchButton_()">SEARCH</button>
         </div>
       </div>
 
@@ -1672,15 +1639,6 @@ th {
 
       </select>
 
-    </div>
-
-    <div class="form-row">
-      <label>Event Type</label>
-      <select id="newType">
-        <option value="Physical">Physical</option>
-        <option value="Online">Online</option>
-        <option value="Hybrid">Hybrid</option>
-      </select>
     </div>
 
     <div class="modal-actions">
@@ -2155,391 +2113,90 @@ async function loadDashboard(
 ===================================================== */
 
 function showDashboardSheet() {
+  const d = (dashboardData && dashboardData.dashboard) || {};
+  const selectedDate = dashboardData?.selectedDate || '';
+  const selectedEvent = (dashboardData?.events || []).find(function(event){
+    return normalizeDateKey(event.date) === normalizeDateKey(selectedDate);
+  }) || {};
+  const years = normalizeDashboardYears(d.years || []);
+  const highest = d.highestAttendance;
+  const lowest = d.lowestAttendance;
+  const session = currentSession_();
+  const name = renderWelcomeName_();
+  const accountType = session.accountRole || session.role || currentRole || 'User';
+  const section = session.section || session.position || '';
 
-  setActiveNav(
-    'navDashboard'
-  );
+  let options = '<option value="" selected>&lt; SELECT DATE HERE &gt;</option>';
+  (dashboardData?.events || []).slice().reverse().forEach(function(event){
+    const selected = normalizeDateKey(event.date) === normalizeDateKey(selectedDate) ? 'selected' : '';
+    options += '<option value="' + escapeAttribute(event.date) + '" ' + selected + '>' + escapeHtml(event.date) + ' — ' + escapeHtml(event.event) + '</option>';
+  });
 
+  let html = '<div class="dashboard-greeting-box">' +
+    '<div class="dashboard-greeting-kicker">WELCOME,</div>' +
+    '<div class="dashboard-greeting-name">' + escapeHtml(name) + '</div>' +
+    (section && String(session.role || '').toLowerCase() === 'student' ? '<div class="dashboard-greeting-meta">' + escapeHtml(section) + '</div>' : '') +
+    '<div class="dashboard-greeting-meta">' + escapeHtml(accountType) + '</div>' +
+  '</div>';
 
-  const content =
-    document.getElementById(
-      'dashboardContent'
-    );
+  html += '<div class="dashboard-main-grid">';
 
-
-  if (!content) {
-    return;
-  }
-
-
-  if (!dashboardData) {
-    return;
-  }
-
-
-  const d =
-    dashboardData.dashboard || {};
-
-
-  const selectedDate =
-    dashboardData.selectedDate || '';
-
-
-  const selectedEvent =
-    (dashboardData.events || []).find(
-      function(event) {
-
-        return normalizeDateKey(event.date) ===
-          normalizeDateKey(selectedDate);
-
-      }
-    ) || {};
-
-
-  let eventOptions = `
-    <option value="" selected>&lt; SELECT DATE HERE &gt;</option>
-  `;
-
-
-  (dashboardData.events || [])
-    .slice()
-    .reverse()
-    .forEach(
-      function(event) {
-
-        const selected =
-          normalizeDateKey(event.date) ===
-          normalizeDateKey(selectedDate)
-            ? 'selected'
-            : '';
-
-
-        eventOptions += `
-
-          <option
-            value="${escapeAttribute(event.date)}"
-            ${selected}
-          >
-            ${escapeHtml(event.date)}
-            — ${escapeHtml(event.event)}
-          </option>
-
-        `;
-
-      }
-    );
-
-
-  const highest =
-    d.highestAttendance &&
-    d.highestAttendance.label
-      ? d.highestAttendance.label
-      : '—';
-
-
-  let html = `
-
-    <div class="dashboard-header">
-
-      <h2>
-        LVCC CALOOCAN 2026–2027
-      </h2>
-
-      <p>
-        Event Attendance Dashboard
-      </p>
-
-      <div class="dashboard-controls">
-
-        <div class="control">
-
-          <label>
-            📅 Event Date
-          </label>
-
-          <select
-            id="dashboardDate"
-            onchange="changeDashboardDate(this.value)"
-          >
-
-            ${eventOptions}
-
-          </select>
-
-        </div>
-
-        <div class="event-pill">
-          ${escapeHtml(selectedEvent.event || 'Event')}
-        </div>
-
-      </div>
-
-    </div>
-
-  `;
-
+  html += '<div class="dashboard-left-column">' +
+    '<div class="event-attendance-section">' +
+      '<div class="event-attendance-heading">' +
+        '<div><h3>EVENT ATTENDANCE DASHBOARD</h3><div class="event-attendance-sub">ATTENDANCE RECORD</div></div>' +
+        '<div class="event-attendance-controls"><label>EVENT DATE</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
+      '</div>' +
+      '<div class="attendance-event-meta">' +
+        '<span><strong>Event:</strong> ' + escapeHtml(selectedEvent.event || 'Attendance Record') + '</span>' +
+        '<span><strong>Status:</strong> ' + escapeHtml(selectedEvent.status || '—') + '</span>' +
+        '<span><strong>Type:</strong> ' + escapeHtml(selectedEvent.type || selectedEvent.eventType || '—') + '</span>' +
+      '</div>';
 
   if (d.notYetHeld) {
-
-    html += `
-
-      <div class="not-held">
-
-        <div class="not-held-icon">
-          ⚪
-        </div>
-
-        <strong>
-          EVENT NOT YET HELD
-        </strong>
-
-        <br>
-
-        Attendance for this event has not started yet.
-
-      </div>
-
-    `;
-
+    html += '<div class="not-held"><div class="not-held-icon">⚪</div><strong>EVENT NOT YET HELD</strong><br>Attendance for this event has not started yet.</div>';
   }
 
+  html += '<div class="stats-grid">' +
+    '<div class="stat-card"><div class="stat-label">TOTAL STUDENTS</div><div class="stat-number">' + Number(d.totalStudents||0) + '</div><div class="stat-sub">Across all year levels</div></div>' +
+    '<div class="stat-card"><div class="stat-label">PRESENT</div><div class="stat-number">' + Number(d.present||0) + '</div><div class="stat-sub">Current record</div></div>' +
+    '<div class="stat-card"><div class="stat-label">ABSENT</div><div class="stat-number">' + Number(d.absent||0) + '</div><div class="stat-sub">Current record</div></div>' +
+    '<div class="stat-card"><div class="stat-label">OVERALL ATTENDANCE RATE</div><div class="stat-number">' + Number(d.attendanceRate||0).toFixed(2) + '%</div><div class="stat-sub">Present ÷ held</div></div>' +
+  '</div>';
 
-  html += `
+  html += '<div class="dashboard-section"><h3 class="dashboard-section-title">📊 Overall Attendance by Year Level</h3><div class="year-grid">';
+  years.forEach(function(year){ html += renderYearCard(year); });
+  html += '</div></div>';
 
-    <div class="stats-grid">
+  html += '<div class="talaan-summary-banner"><h3 class="dashboard-section-title" style="margin-bottom:12px">📈 Attendance Summary</h3><div class="talaan-summary-grid">' +
+    '<div class="talaan-summary-item"><strong>' + Number(d.attendanceRate||0).toFixed(2) + '%</strong><span>Overall attendance rate</span></div>' +
+    '<div class="talaan-summary-item"><strong>' + escapeHtml(highest?.label || '—') + (highest ? ' • ' + Number(highest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Highest attendance rate</span></div>' +
+    '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
+  '</div></div>' +
+  '</div>';
 
-      <div class="stat-card">
+  const upcoming = dashboardData?.upcomingEvents || [];
+  html += '<div class="dashboard-right-column"><div class="upcoming-activities-section">' +
+    '<h3 class="dashboard-section-title">UPCOMING ACTIVITIES</h3>' +
+    '<div class="upcoming-activities-box">';
+  if (!upcoming.length) {
+    html += '<div class="upcoming-empty">No activities to display.</div>';
+  } else {
+    upcoming.forEach(function(ev){
+      html += '<div class="upcoming-item">' +
+        '<div class="upcoming-event-name">' + escapeHtml(ev.eventName || ev.event || '') + '</div>' +
+        (ev.date ? '<div class="upcoming-detail">' + escapeHtml(ev.date) + '</div>' : '') +
+        (ev.time ? '<div class="upcoming-detail">' + escapeHtml(ev.time) + '</div>' : '') +
+        (ev.who ? '<div class="upcoming-detail">' + escapeHtml(ev.who) + '</div>' : '') +
+        (ev.where ? '<div class="upcoming-detail">' + escapeHtml(ev.where) + '</div>' : '') +
+        (ev.organizedBy ? '<div class="upcoming-detail">' + escapeHtml(ev.organizedBy) + '</div>' : '') +
+      '</div>';
+    });
+  }
+  html += '</div></div></div>';
 
-        <div class="stat-label">
-          TOTAL STUDENTS
-        </div>
-
-        <div class="stat-number">
-          ${d.totalStudents || 0}
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          PRESENT
-        </div>
-
-        <div class="stat-number">
-          ${d.present || 0}
-        </div>
-
-        <div class="stat-sub">
-          ${Number(d.attendanceRate || 0).toFixed(2)}%
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          ABSENT
-        </div>
-
-        <div class="stat-number">
-          ${d.absent || 0}
-        </div>
-
-      </div>
-
-
-      <div class="stat-card">
-
-        <div class="stat-label">
-          HIGHEST ATTENDANCE
-        </div>
-
-        <div
-          class="stat-number"
-          style="font-size:24px;"
-        >
-          ${escapeHtml(highest)}
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="dashboard-section">
-
-      <h3 class="dashboard-section-title">
-        📊 Overall Attendance
-      </h3>
-
-      <div class="year-grid">
-
-  `;
-
-
-  const yearData =
-    normalizeDashboardYears(
-      d.years
-    );
-
-
-  yearData.forEach(
-    function(year) {
-
-      html +=
-        renderYearCard(year);
-
-    }
-  );
-
-
-  html += `
-
-      </div>
-
-    </div>
-
-  `;
-
-
-  content.innerHTML =
-    html;
-
+  setPage_(html);
 }
-
-
-async function changeDashboardDate(
-  selectedDate
-) {
-
-  if (!selectedDate) {
-    return;
-  }
-
-  await loadDashboard(
-    selectedDate
-  );
-
-}
-
-
-/* =====================================================
-   NORMALIZE OVERALL DASHBOARD YEARS
-===================================================== */
-
-function normalizeDashboardYears(years) {
-
-  if (Array.isArray(years)) {
-
-    return years
-      .filter(function(item) {
-
-        return item &&
-          typeof item === 'object';
-
-      })
-      .sort(function(a, b) {
-
-        return Number(
-          a.yearLevel ||
-          a.year ||
-          0
-        ) -
-        Number(
-          b.yearLevel ||
-          b.year ||
-          0
-        );
-
-      });
-
-  }
-
-
-  if (
-    years &&
-    typeof years === 'object'
-  ) {
-
-    return ['1','2','3','4']
-      .map(function(level) {
-
-        const item =
-          years[level] ||
-          years[Number(level)] ||
-          {};
-
-
-        return {
-
-          yearLevel:
-            String(
-              item.yearLevel ||
-              item.year ||
-              level
-            ),
-
-          totalStudents:
-            Number(
-              item.totalStudents ??
-              item.total ??
-              0
-            ),
-
-          present:
-            Number(
-              item.present ||
-              0
-            ),
-
-          absent:
-            Number(
-              item.absent ||
-              0
-            ),
-
-          notYetHeld:
-            Number(
-              item.notYetHeld ??
-              item.notYet ??
-              0
-            ),
-
-          rate:
-            Number(
-              item.rate ??
-              item.percentage ??
-              0
-            ),
-
-          percentage:
-            Number(
-              item.percentage ??
-              item.rate ??
-              0
-            ),
-
-          sections:
-            Array.isArray(
-              item.sections
-            )
-              ? item.sections
-              : []
-
-        };
-
-      });
-
-  }
-
-
-  return [];
-
-}
-
 
 function renderYearCard(year) {
 
@@ -4575,6 +4232,7 @@ function escapeAttribute(
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
 /* =====================================================
@@ -4760,20 +4418,23 @@ function renderTalaanMenu_(activeId) {
   html += '<button class="close-menu" onclick="closeTalaanMenu_()">×</button>';
   html += '<img class="talaan-menu-logo" src="' + TALAAN_LOGO_DATA + '" alt="TALAAN">';
   html += '<div class="talaan-menu-user">' + escapeHtml(name) + '</div>';
-  html += '<div class="talaan-menu-role">' + escapeHtml(role + year) + '</div>';
+  html += '<div class="talaan-menu-role">' + escapeHtml(session.position || role) + ' • ' + escapeHtml(session.accountRole || role) + (session.yearLevel && session.yearLevel !== 'ALL' ? ' • Year ' + escapeHtml(session.yearLevel) : '') + (session.course && session.course !== 'ALL' ? ' • Course ' + escapeHtml(session.course) : '') + '</div>';
   html += '</div>';
 
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
-  html += '<div class="talaan-menu-group">Attendance</div>';
-  if (role === 'Student' || role === 'Teacher') {
-    const lvl = session.yearLevel;
-    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
-  } else {
-    ['1','2','3','4'].forEach(function(level) {
-      html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
-    });
+  const isClassSec = normalizeClient_(session.accountRole || '') === 'class sec';
+  if (!isClassSec) {
+    html += '<div class="talaan-menu-group">Attendance</div>';
+    if (role === 'Student' || role === 'Teacher') {
+      const lvl = session.yearLevel;
+      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
+    } else {
+      ['1','2','3','4'].forEach(function(level) {
+        html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
+      });
+    }
   }
 
   if (role === 'Student') {
@@ -4787,13 +4448,23 @@ function renderTalaanMenu_(activeId) {
   }
 
   if (role === 'Secretary') {
-    html += '<div class="talaan-menu-group">Secretary</div>';
-    html += menuButton_('⚙️ Event Settings', "talaanNavigate_('settings')", 'menuSettings', activeId === 'settings');
-    html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
-    html += menuButton_('📷 QR Scanner', "talaanNavigate_('scanner')", 'menuScanner', activeId === 'scanner');
+    if (isClassSec) {
+      html += '<div class="talaan-menu-group">Class Secretary</div>';
+      html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
+    } else {
+      html += '<div class="talaan-menu-group">Secretary</div>';
+      html += menuButton_('⚙️ Event Settings', "talaanNavigate_('settings')", 'menuSettings', activeId === 'settings');
+      html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
+      html += menuButton_('📷 QR Scanner', "talaanNavigate_('scanner')", 'menuScanner', activeId === 'scanner');
+    }
   }
 
-  html += '<div class="talaan-menu-group">Account</div>';
+  if (role === 'Secretary') {
+    html += '<div class="talaan-menu-group">Account</div>';
+    html += menuButton_('🔐 Change Password', "showSecretaryPasswordSettings_()", 'menuPassword', activeId === 'password');
+  } else {
+    html += '<div class="talaan-menu-group">Account</div>';
+  }
   html += '<button class="danger" onclick="talaanLogout_()">↪ Logout</button>';
   menu.innerHTML = html;
 
@@ -4801,6 +4472,8 @@ function renderTalaanMenu_(activeId) {
   hamburger.classList.remove('hidden');
   hamburger.classList.toggle('menu-open', menu.classList.contains('open'));
 }
+
+function normalizeClient_(value) { return String(value == null ? '' : value).trim().toLowerCase(); }
 
 function getYearLabelClient_(level) {
   const map = {'1':'1ST YEAR','2':'2ND YEAR','3':'3RD YEAR','4':'4TH YEAR'};
@@ -4874,8 +4547,11 @@ function switchAuthRole_(role) {
 
   if (role === 'Secretary') {
     body.innerHTML = '<label style="font-size:12px;font-weight:800;color:#718096">SECRETARY ACCESS CODE</label>' +
-      '<div class="talaan-input-wrap"><input id="talaanSecretCode" type="password" autocomplete="off" placeholder="Enter Secretary access code"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretCode\',this)">👁</button></div>';
+      '<div class="talaan-input-wrap"><input id="talaanSecretCode" type="password" autocomplete="username" placeholder="Enter Secretary access code"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretCode\',this)">👁</button></div>' +
+      '<label style="font-size:12px;font-weight:800;color:#718096;margin-top:10px;display:block">PASSWORD <span style="font-weight:600;color:#9aa3af">(if set)</span></label>' +
+      '<div class="talaan-input-wrap"><input id="talaanSecretaryPassword" type="password" autocomplete="current-password" placeholder="Secretary password"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretaryPassword\',this)">👁</button></div>';
     attachEnter_(document.getElementById('talaanSecretCode'));
+    attachEnter_(document.getElementById('talaanSecretaryPassword'));
     setTimeout(function(){ document.getElementById('talaanSecretCode')?.focus(); },50);
     return;
   }
@@ -4978,8 +4654,8 @@ function showTalaanTransition_(session, options){
 
   const s = session || {};
   const name = s.name || (s.role === 'Secretary' ? 'Secretary' : s.role === 'Teacher' ? 'Teacher' : 'User');
-  const section = s.section || s.classSection || s.adviserSection || s.course || s.yearLevel || '';
-  const role = s.role || currentRole || 'User';
+  const section = s.position || s.section || s.classSection || s.adviserSection || s.course || s.yearLevel || '';
+  const role = s.accountRole || s.role || currentRole || 'User';
 
   const kicker = document.getElementById('talaanTransitionKicker');
   const title = document.getElementById('talaanTransitionTitle');
@@ -5018,7 +4694,8 @@ async function submitTalaanAuth_() {
     if (authRole === 'Secretary') {
       const code = document.getElementById('talaanSecretCode')?.value.trim() || '';
       if (!code) throw new Error('Please enter your Secretary access code.');
-      data = await apiRequest('login', {role:'secretary', code:code});
+      const password = document.getElementById('talaanSecretaryPassword')?.value || '';
+      data = await apiRequest('login', {role:'secretary', code:code, password:password});
     } else if (authRole === 'Student') {
       const studentId = document.getElementById('talaanStudentId')?.value.trim() || '';
       const password = document.getElementById('talaanStudentPassword')?.value || '';
@@ -5113,7 +4790,7 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   showTalaanLoading_();
 
   const badge = document.getElementById('roleBadge');
-  if (badge) badge.textContent = role;
+  if (badge) { const ss = currentSession_(); badge.textContent = ss.accountRole || role; }
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
@@ -5155,8 +4832,6 @@ async function loadDashboard(selectedDate = '') {
   }
 }
 
-function normalizeTextClient_(value){ return String(value == null ? '' : value).trim().toLowerCase(); }
-
 function renderWelcomeName_() {
   const s = currentSession_();
   if (s.name) return s.name;
@@ -5170,61 +4845,28 @@ function renderWelcomeName_() {
 function showDashboardSheet() {
   const d = (dashboardData && dashboardData.dashboard) || {};
   const selectedDate = dashboardData?.selectedDate || '';
-  const selectedEvent = (dashboardData?.events || []).find(function(event){
-    return normalizeDateKey(event.date) === normalizeDateKey(selectedDate);
-  }) || {};
+  const selectedEvent = (dashboardData?.events || []).find(function(event){return normalizeDateKey(event.date) === normalizeDateKey(selectedDate);}) || {};
   const years = normalizeDashboardYears(d.years || []);
   const highest = d.highestAttendance;
   const lowest = d.lowestAttendance;
   const session = currentSession_();
-  const upcoming = Array.isArray(dashboardData?.upcomingEvents) ? dashboardData.upcomingEvents : [];
-
-  let greetingMeta = '';
-  if (String(session.role || '') === 'Student' && session.section) {
-    greetingMeta += '<div>' + escapeHtml(session.section) + '</div>';
-  }
-  greetingMeta += '<div>' + escapeHtml(session.role || currentRole || 'User') + '</div>';
+  const role = session.role || currentRole || '';
 
   let options = '<option value="" selected>&lt; SELECT DATE HERE &gt;</option>';
   (dashboardData?.events || []).slice().reverse().forEach(function(event){
     const selected = normalizeDateKey(event.date) === normalizeDateKey(selectedDate) ? 'selected' : '';
-    options += '<option value="' + escapeAttribute(event.date) + '" ' + selected + '>' +
-      escapeHtml(event.date) + ' — ' + escapeHtml(event.event) + '</option>';
+    options += '<option value="' + escapeAttribute(event.date) + '" ' + selected + '>' + escapeHtml(event.date) + ' — ' + escapeHtml(event.event) + '</option>';
   });
 
-  let upcomingHtml = '';
-  if (!upcoming.length) {
-    upcomingHtml = '<div class="upcoming-empty">No activities to display.</div>';
-  } else {
-    upcomingHtml = upcoming.map(function(item){
-      return '<div class="upcoming-item">' +
-        '<div class="upcoming-event-name">' + escapeHtml(item.event || '') + '</div>' +
-        (item.date ? '<div class="upcoming-detail">' + escapeHtml(item.date) + '</div>' : '') +
-        (item.time ? '<div class="upcoming-detail">' + escapeHtml(item.time) + '</div>' : '') +
-        (item.who ? '<div class="upcoming-detail">' + escapeHtml(item.who) + '</div>' : '') +
-        (item.where ? '<div class="upcoming-detail">' + escapeHtml(item.where) + '</div>' : '') +
-        (item.organizedBy ? '<div class="upcoming-detail">' + escapeHtml(item.organizedBy) + '</div>' : '') +
-      '</div>';
-    }).join('');
-  }
-
-  let html = '<div class="dashboard-greeting-box">' +
-    '<div class="dashboard-greeting-kicker">WELCOME,</div>' +
-    '<div class="dashboard-greeting-name">' + escapeHtml(renderWelcomeName_()) + '</div>' +
-    '<div class="dashboard-greeting-meta">' + greetingMeta + '</div>' +
+  let html = '<div class="dashboard-header">' +
+    '<div class="talaan-welcome-text">WELCOME,</div>' +
+    '<h2 style="font-size:30px;margin-top:2px">' + escapeHtml(renderWelcomeName_()) + '</h2>' +
+    '<p>SSG TALAAN • Event Attendance Dashboard</p>' +
+    '<div class="dashboard-controls">' +
+      '<div class="control"><label>📅 Event Date</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
+      '<div class="event-pill">' + escapeHtml(selectedEvent.event || 'Attendance Record') + '</div>' +
+    '</div>' +
   '</div>';
-
-  html += '<div class="dashboard-main-grid">' +
-    '<div class="dashboard-left-column">' +
-      '<div class="event-attendance-section">' +
-    '<div class="event-attendance-heading">' +
-      '<div><h3>EVENT ATTENDANCE DASHBOARD</h3><div class="event-attendance-sub">ATTENDANCE RECORD' +
-        (selectedEvent.event ? ' • ' + escapeHtml(selectedEvent.event) : '') +
-        (selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : '') +
-        (selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : '') +
-      '</div></div>' +
-      '<div class="event-attendance-controls"><label>Event Date</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
-    '</div>';
 
   if (d.notYetHeld) {
     html += '<div class="not-held"><div class="not-held-icon">⚪</div><strong>EVENT NOT YET HELD</strong><br>Attendance for this event has not started yet.</div>';
@@ -5241,21 +4883,25 @@ function showDashboardSheet() {
   years.forEach(function(year){ html += renderYearCard(year); });
   html += '</div></div>';
 
+  const upcoming = dashboardData?.upcomingEvents || [];
+  html += '<div class="dashboard-section talaan-upcoming-card"><h3 class="dashboard-section-title">📅 Upcoming Activities</h3>';
+  if (!upcoming.length) {
+    html += '<div class="status">No events to display.</div>';
+  } else {
+    html += '<div class="talaan-upcoming-list">';
+    upcoming.forEach(function(ev){
+      html += '<div class="talaan-upcoming-item"><div class="talaan-upcoming-name">' + escapeHtml(ev.eventName) + '</div><div class="talaan-upcoming-meta"><span>📅 ' + escapeHtml(ev.date || '—') + '</span><span>⏰ ' + escapeHtml(ev.time || '—') + '</span><span>👥 ' + escapeHtml(ev.who || '—') + '</span><span>📍 ' + escapeHtml(ev.where || '—') + '</span><span>🏛️ ' + escapeHtml(ev.organizedBy || '—') + '</span></div></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
   html += '<div class="talaan-summary-banner"><h3 class="dashboard-section-title" style="margin-bottom:12px">📈 Attendance Summary</h3><div class="talaan-summary-grid">' +
     '<div class="talaan-summary-item"><strong>' + Number(d.attendanceRate||0).toFixed(2) + '%</strong><span>Overall attendance rate</span></div>' +
     '<div class="talaan-summary-item"><strong>' + escapeHtml(highest?.label || '—') + (highest ? ' • ' + Number(highest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Highest attendance rate</span></div>' +
     '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
   '</div></div>';
 
-  html += '</div>' +
-    '</div>' +
-    '<div class="dashboard-right-column">' +
-      '<div class="upcoming-activities-section">' +
-        '<h3 class="dashboard-section-title">UPCOMING ACTIVITIES</h3>' +
-        '<div class="upcoming-activities-box">' + upcomingHtml + '</div>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
   setPage_(html);
 }
 
@@ -5308,9 +4954,7 @@ async function showAttendance(sheetName) {
   try {
     const result = await apiRequest('attendance',{sheet:sheetName});
     if (!result || result.success !== true) throw new Error(result?.error || 'Attendance could not be loaded.');
-    const attendanceEvents = (dashboardData?.events || []).filter(function(ev){ return normalizeDateKey(ev.date); });
-    const eventMeta = attendanceEvents.length ? '<div class="attendance-event-meta">' + attendanceEvents.map(function(ev){ return '<span><strong>' + escapeHtml(ev.date || '') + '</strong> ' + escapeHtml(ev.event || '') + (ev.type ? ' • ' + escapeHtml(ev.type) : '') + (ev.status ? ' • ' + escapeHtml(ev.status) : '') + '</span>'; }).join('') + '</div>' : '';
-    setPage_('<div class="attendance-card"><h2 class="section-heading">📋 ' + escapeHtml(getYearLabelClient_(level)) + ' Attendance</h2><p class="section-description">🟢 Present &nbsp;&nbsp; 🔴 Absent &nbsp;&nbsp; ⚪ Not Yet Held</p>' + eventMeta + '<div class="table-wrapper">' + createAttendanceTable(result.data) + '</div></div>');
+    setPage_('<div class="attendance-card"><h2 class="section-heading">📋 ' + escapeHtml(getYearLabelClient_(level)) + ' Attendance</h2><p class="section-description">🟢 Present &nbsp;&nbsp; 🔴 Absent &nbsp;&nbsp; ⚪ Not Yet Held</p><div class="table-wrapper">' + createAttendanceTable(result.data) + '</div></div>');
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
@@ -5326,6 +4970,7 @@ function getStudentCourseClient_(student) {
   if (section === 'ENTREP' || section === 'ENTREPRENEURSHIP') return 'Entrepreneurship';
   if (/^[1-4]A$/.test(section)) return 'Broadcasting';
   if (/^[1-4]B$/.test(section)) return 'Communication';
+  if (/^[1-4]C$/.test(section)) return 'BACM';
   if (section.indexOf('BROADCAST') !== -1) return 'Broadcasting';
   if (section.indexOf('COMM') !== -1) return 'Communication';
   return section || 'Other';
@@ -5535,13 +5180,20 @@ async function buildStudentIdPng_(student) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#718096';
   ctx.font = '700 30px Arial, sans-serif';
-  ctx.fillText('My TALAAN ID', width/2, 275);
+  ctx.fillText('My TALAAN ID', width/2, 245);
 
   ctx.fillStyle = '#17266b';
-  ctx.font = '900 55px Arial, sans-serif';
-  ctx.fillText(String(student.studentId), width/2, 350);
+  const studentCode = String(student.studentId);
+  const codeMaxWidth = 690;
+  let codeFont = 40;
+  while (codeFont > 24) {
+    ctx.font = '900 ' + codeFont + 'px Arial, sans-serif';
+    if (ctx.measureText(studentCode).width <= codeMaxWidth) break;
+    codeFont -= 2;
+  }
+  ctx.fillText(studentCode, width/2, 318);
 
-  const qrData = await getQrDataUrl_(student.studentId, 500);
+  const qrData = await getQrDataUrl_(student.studentId, 410);
   const qrImg = await new Promise(function(resolve,reject) {
     const img = new Image();
     img.onload = function(){ resolve(img); };
@@ -5549,9 +5201,9 @@ async function buildStudentIdPng_(student) {
     img.src = qrData;
   });
 
-  const qrSize = 500;
+  const qrSize = 410;
   const qrX = (width-qrSize)/2;
-  const qrY = 365;
+  const qrY = 360;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(qrX-18,qrY-18,qrSize+36,qrSize+36);
   ctx.drawImage(qrImg,qrX,qrY,qrSize,qrSize);
@@ -5566,26 +5218,26 @@ async function buildStudentIdPng_(student) {
     if (ctx.measureText(name).width <= maxNameWidth) break;
     nameFont -= 2;
   }
-  ctx.fillText(name, width/2, 915);
+  ctx.fillText(name, width/2, 820);
 
   ctx.fillStyle = '#53627a';
-  ctx.font = '800 31px Arial, sans-serif';
-  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 960);
+  ctx.font = '800 29px Arial, sans-serif';
+  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 862);
 
   ctx.fillStyle = '#718096';
   ctx.font = '700 20px Arial, sans-serif';
-  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 995);
+  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 898);
 
   ctx.strokeStyle = '#d7dee9';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(155,1030);
-  ctx.lineTo(745,1030);
+  ctx.moveTo(155,935);
+  ctx.lineTo(745,935);
   ctx.stroke();
 
   ctx.fillStyle = '#718096';
   ctx.font = '600 18px Arial, sans-serif';
-  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1075);
+  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 980);
 
   return canvas.toDataURL('image/png');
 }
@@ -5741,6 +5393,7 @@ async function showStudentDirectory_() {
     const grouped = groupStudentDirectory_(students);
     let html = '<div class="attendance-card">' +
       '<h2 class="section-heading">🪪 Student TALAAN IDs</h2>' +
+      '<div class="talaan-code-list-card"><div><strong>Student Name + TALAAN Code</strong><div class="section-description" style="margin:4px 0 10px">Copy-paste list for student distribution. The full ID/QR remains available below.</div></div><button class="talaan-id-action secondary" onclick="copyStudentCodes_()">📋 COPY ALL</button><textarea id="talaanCodeList" readonly style="width:100%;min-height:130px;border:1px solid #dce3ee;border-radius:12px;padding:10px;font-family:inherit;font-size:12px;resize:vertical"></textarea></div>' +
       '<p class="section-description">Browse by year level, course, and section. View or download an individual PNG, or download a ZIP containing the collated IDs for a section, course, or whole year.</p>' +
       '<div class="talaan-id-toolbar"><div class="left"><div class="title">Official TALAAN Student IDs</div><div class="hint">QR value = the student\'s TALAAN ID. This is the same ID shown in the student profile.</div></div><div class="talaan-id-actions"><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=true;});">Expand All</button><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=false;});">Collapse All</button></div></div>';
 
@@ -5765,7 +5418,10 @@ async function showStudentDirectory_() {
         html += '<details class="talaan-id-course" open>' +
           '<summary><div class="talaan-id-summary-row"><span>' + escapeHtml(courseName) + '</span><span class="talaan-id-summary-meta">' + courseStudents.length + ' student' + (courseStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
           '<div class="talaan-id-course-body">' +
-            '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary course-zip-button" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
+            '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary course-zip-button" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>' +
+            '<div class="talaan-course-code-list"><div class="talaan-course-code-list-title">Student Name + TALAAN Code</div>' +
+              courseStudents.map(function(st){ return '<div class="talaan-course-code-row"><span class="talaan-course-code-name">' + escapeHtml(st.name || '') + '</span><span class="talaan-course-code-value">' + escapeHtml(st.studentId || 'NO TALAAN ID') + '</span></div>'; }).join('') +
+            '</div>';
 
         sections.forEach(function(section) {
           const sectionStudents = collectStudentsFromSection_(course.sections[section]);
@@ -5798,6 +5454,8 @@ async function showStudentDirectory_() {
 
     html += '<div id="talaanIdProgress" class="status" style="min-height:18px"></div></div>';
     setPage_(html);
+    const codeBox = document.getElementById('talaanCodeList');
+    if (codeBox) codeBox.value = students.map(function(st){ return (st.name || '') + ' — ' + (st.studentId || 'NO TALAAN ID'); }).join('\n');
 
     // Store convenient grouped references after rendering.
     Object.keys(grouped).forEach(function(year) {
@@ -5814,6 +5472,25 @@ async function showStudentDirectory_() {
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
+}
+
+async function copyStudentCodes_() {
+  const box = document.getElementById('talaanCodeList');
+  if (!box) return;
+  try { await navigator.clipboard.writeText(box.value); alert('✅ Student names and TALAAN codes copied.'); } catch(e) { box.focus(); box.select(); document.execCommand('copy'); alert('✅ Student names and TALAAN codes copied.'); }
+}
+
+async function showSecretaryPasswordSettings_() {
+  if (currentRole !== 'Secretary') return;
+  renderTalaanMenu_('password');
+  setPage_('<div class="attendance-card"><h2 class="section-heading">🔐 Change Secretary Password</h2><p class="section-description">Set or change the password used with this Secretary access code.</p><div class="setting-grid"><div class="setting-field"><label>CURRENT PASSWORD</label><input id="secCurrentPassword" type="password" placeholder="Leave blank if none is set"></div><div class="setting-field"><label>NEW PASSWORD</label><input id="secNewPassword" type="password" placeholder="At least 6 characters"></div></div><div class="modal-actions"><button class="save-button" onclick="saveSecretaryPassword_()">💾 SAVE PASSWORD</button></div></div>');
+}
+
+async function saveSecretaryPassword_() {
+  const currentPassword = document.getElementById('secCurrentPassword')?.value || '';
+  const newPassword = document.getElementById('secNewPassword')?.value || '';
+  if (newPassword.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  try { const result = await apiRequest('changeSecretaryPassword',{currentPassword:currentPassword,newPassword:newPassword}); if (!result || result.success !== true) throw new Error(result?.error || 'Unable to change password.'); alert('✅ Secretary password updated successfully.'); document.getElementById('secCurrentPassword').value=''; document.getElementById('secNewPassword').value=''; } catch(e) { alert('❌ Unable to change password.\n\n' + e.message); }
 }
 
 async function showWarnings_() {
@@ -5856,6 +5533,10 @@ async function searchStudent_() {
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
 }
+
+function handleHeaderSearchButton_() { if (window.innerWidth <= 700) { toggleHeaderSearch_(); } else { searchStudentFromHeader_(); } }
+
+function toggleHeaderSearch_() { const box=document.getElementById('talaanTopSearch'); const input=document.getElementById('talaanHeaderSearchInput'); if(!box) return; box.classList.toggle('search-open'); if(box.classList.contains('search-open')) input?.focus(); else if(input) input.value=''; }
 
 async function searchStudentFromHeader_() {
   const input = document.getElementById('talaanHeaderSearchInput');
@@ -6006,7 +5687,7 @@ async function downloadMyProfileId_() {
 }
 
 function showSettings() {
-  if (currentRole !== 'Secretary') return;
+  if (currentRole !== 'Secretary' || normalizeClient_(currentSession_().accountRole) === 'class sec') return;
   renderTalaanMenu_('settings');
   const data = dashboardData?.settings || [];
   if (!data.length) { setPage_('<div class="attendance-card"><h2 class="section-heading">⚙️ Event Settings</h2><p>No settings found.</p></div>'); return; }
@@ -6024,22 +5705,11 @@ function showSettings() {
     const date=dateIndex>=0?data[r][dateIndex]:'';
     const cutoff=cutoffIndex>=0?data[r][cutoffIndex]:'';
     const status=statusIndex>=0?data[r][statusIndex]:'';
-    const typeIndex = findHeader(headers,['TYPE','EVENT TYPE','EVENTTYPE']);
-    const type = typeIndex>=0?data[r][typeIndex]:'Physical';
     html += '<div class="setting-card"><div class="setting-top"><div class="setting-title">' + escapeHtml(event||'Untitled Event') + '</div><div class="row-badge">ROW ' + row + '</div></div><div class="setting-grid">' +
       '<div class="setting-field"><label>EVENT</label><input id="event_' + row + '" value="' + escapeAttribute(event) + '"></div>' +
       '<div class="setting-field"><label>DATE</label><input id="date_' + row + '" value="' + escapeAttribute(date) + '"></div>' +
       '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '"></div>' +
-      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '">' +
-        '<option value="Scheduled" ' + (normalizeTextClient_(status)==='scheduled'?'selected':'') + '>Scheduled</option>' +
-        '<option value="Active" ' + (normalizeTextClient_(status)==='active'?'selected':'') + '>Active</option>' +
-        '<option value="Closed" ' + (normalizeTextClient_(status)==='closed'?'selected':'') + '>Closed</option>' +
-      '</select></div>' +
-      '<div class="setting-field"><label>EVENT TYPE</label><select id="type_' + row + '">' +
-        '<option value="Physical" ' + (normalizeTextClient_(type)==='physical'?'selected':'') + '>Physical</option>' +
-        '<option value="Online" ' + (normalizeTextClient_(type)==='online'?'selected':'') + '>Online</option>' +
-        '<option value="Hybrid" ' + (normalizeTextClient_(type)==='hybrid'?'selected':'') + '>Hybrid</option>' +
-      '</select></div>' +
+      '<div class="setting-field"><label>STATUS</label><input id="status_' + row + '" value="' + escapeAttribute(status) + '"></div>' +
       '</div><div class="modal-actions"><button class="save-button" onclick="saveSettingRow(' + row + ')">💾 SAVE EVENT</button><button class="save-button" style="background:#a82222" onclick="deleteEventRow_(' + row + ')">🗑 DELETE</button></div></div>';
   }
   html += '</div></div>';
@@ -6049,7 +5719,7 @@ function showSettings() {
 async function saveSettingRow(row) {
   if (currentRole !== 'Secretary') return;
   try {
-    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||'',type:document.getElementById('type_'+row)?.value.trim()||'Physical'});
+    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||''});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
     alert('✅ Event updated successfully.');
     await refreshDashboardData();
@@ -6059,7 +5729,7 @@ async function saveSettingRow(row) {
 
 async function deleteEventRow_(row) {
   if (currentRole !== 'Secretary') return;
-  if (!confirm('Delete this event from Event Settings? Its matching attendance date column will also be removed from all attendance tabs.')) return;
+  if (!confirm('Delete this event from Event Settings? Existing attendance columns/records will be preserved.')) return;
   try {
     const result = await apiRequest('deleteEvent',{row:row});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to delete event.');
@@ -6075,10 +5745,9 @@ async function addEvent() {
   const date=document.getElementById('newDate')?.value.trim()||'';
   const cutoff=document.getElementById('newCutoff')?.value.trim()||'';
   const status=document.getElementById('newStatus')?.value.trim()||'';
-  const type=document.getElementById('newType')?.value.trim()||'Physical';
   if (!event || !date) { alert('Please provide the event title and date.'); return; }
   try {
-    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status,type:type});
+    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
     alert('✅ New event added successfully.');
     document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
@@ -6092,7 +5761,7 @@ async function refreshDashboardData() {
 }
 
 function openScanner() {
-  if (currentRole !== 'Secretary') return;
+  if (currentRole !== 'Secretary' || normalizeClient_(currentSession_().accountRole) === 'class sec') return;
   renderTalaanMenu_('scanner');
   closeTalaanMenu_();
   // Reuse the existing scanner implementation/UI.
@@ -6113,23 +5782,6 @@ async function onScanSuccess(decodedText) {
   setTimeout(async function(){processing=false;if(scanner&&scanning){try{scanner.resume();if(loading)loading.textContent='📷 CAMERA ACTIVE — Ready for next QR code.';}catch(e){await restartScannerAutomatically();}}},250);
 }
 
-function toggleHeaderSearch_(){
-  const shell=document.getElementById('talaanTopSearch');
-  const btn=document.getElementById('talaanMobileSearchToggle');
-  if(!shell) return;
-  const open=shell.classList.toggle('open');
-  if(btn){
-    btn.setAttribute('aria-label', open ? 'Close search' : 'Open search');
-    btn.textContent=open ? '×' : '🔍';
-  }
-  if(open){
-    setTimeout(function(){
-      const input=document.getElementById('talaanHeaderSearchInput');
-      if(input) input.focus();
-    },80);
-  }
-}
-
 function renderHeaderLogo_() {
   const topbar=document.querySelector('.topbar');
   if(!topbar || document.getElementById('talaanHeaderLogo')) return;
@@ -6138,6 +5790,8 @@ function renderHeaderLogo_() {
   const left=document.createElement('div');left.className='talaan-top-left';
   left.innerHTML='<img id="talaanHeaderLogo" class="talaan-header-logo" src="' + TALAAN_LOGO_DATA + '" alt="TALAAN"><div><div style="font-size:19px;font-weight:900;color:#17266b">SSG TALAAN</div><div style="font-size:11px;color:#718096">Digital Attendance and Records Management System</div></div>';
   topbar.insertBefore(left,topbar.firstChild);
+  const hamburger=document.getElementById('talaanHamburger');
+  if(hamburger && hamburger.parentElement !== left){ left.appendChild(hamburger); }
 }
 
 /* =====================================================
@@ -6269,69 +5923,245 @@ window.addEventListener('DOMContentLoaded', function(){
   .talaan-transition-section{font-size:14px}
 }
 
-/* FINAL DASHBOARD / MOBILE HEADER TWEAKS */
-.dashboard-main-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:18px;align-items:start}
-.dashboard-left-column{min-width:0}
-.dashboard-right-column{min-width:0}
-.dashboard-right-column .upcoming-activities-section{margin-bottom:0}
-.event-attendance-section{min-height:520px}
-.upcoming-activities-section{height:100%}
-.upcoming-activities-box{height:390px}
-@media(max-width:1050px){.dashboard-main-grid{grid-template-columns:minmax(0,1fr) 300px}.event-attendance-section{min-height:500px}}
-@media(max-width:820px){.dashboard-main-grid{grid-template-columns:1fr}.dashboard-right-column{order:2}.dashboard-left-column{order:1}.event-attendance-section{min-height:0}.upcoming-activities-box{height:300px}}
+/* FINAL RESPONSIVE / MOBILE TUNING */
+.year-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+.talaan-upcoming-card{margin-top:18px;background:#fff;border-radius:18px;padding:18px;box-shadow:0 5px 20px rgba(20,43,75,.07)}
+.talaan-upcoming-list{display:grid;gap:10px}
+.talaan-upcoming-item{border:1px solid #e2e8f0;border-radius:14px;padding:13px;background:#f8fafc}
+.talaan-upcoming-name{font-weight:900;color:#17266b;font-size:15px}
+.talaan-upcoming-meta{display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:7px;font-size:11px;color:#718096}
+.talaan-code-list-card{margin:14px 0;padding:14px;border:1px solid #dce3ee;border-radius:15px;background:#f8fafc}
 @media(max-width:700px){
-  .topbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:8px 12px 8px 58px!important;min-height:82px!important;position:relative!important}
-  .talaan-top-left{display:flex!important;align-items:center!important;gap:8px!important;padding-left:0!important;max-width:none!important;min-width:0!important;flex:1 1 auto!important}
-  .talaan-header-logo{display:block!important;width:auto!important;height:68px!important;max-width:92px!important;margin:0!important;object-fit:contain!important}
+  .topbar{flex-direction:row!important;align-items:center!important;flex-wrap:nowrap!important;padding:10px 12px 10px 58px!important;gap:8px!important;min-height:66px}
+  .talaan-top-left{padding-left:0!important;max-width:none!important;flex:1;min-width:0}
+  .talaan-header-logo{display:block!important;width:44px!important;height:36px!important;margin:0!important;object-fit:contain}
   .talaan-top-left>div{display:none!important}
-  .talaan-hamburger{position:absolute!important;left:10px!important;top:18px!important;width:42px!important;height:42px!important;font-size:21px!important}
-  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:6px!important;flex:0 0 auto!important}
-  .role-badge{height:26px!important;min-height:26px!important;padding:5px 9px!important;font-size:10px!important;white-space:nowrap!important;align-self:auto!important}
-  .talaan-search-shell{width:auto!important}
-  .talaan-mobile-search-toggle{width:40px!important;height:40px!important}
-  .talaan-top-search{position:absolute!important;right:12px!important;top:52px!important;width:0!important;max-width:calc(100vw - 24px)!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;transform:translateX(10px)!important;transition:width .3s ease,opacity .2s ease,transform .3s ease!important}
-  .talaan-top-search.open{width:min(78vw,340px)!important;opacity:1!important;pointer-events:auto!important;transform:translateX(0)!important}
-  .talaan-top-search input{width:100%!important;height:40px!important;min-width:0!important;padding:0 12px!important;opacity:1!important;border:1px solid #dce3ee!important;border-radius:12px!important}
-  .talaan-top-search button{display:none!important}
+  .top-title{display:none!important}
+  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:5px!important;flex:0 0 auto}
+  .role-badge{font-size:10px!important;padding:5px 9px!important;white-space:nowrap}
+  .talaan-top-search{width:auto!important;max-width:none!important}
+  .talaan-top-search input{display:none!important;width:0!important}
+  .talaan-top-search button{width:38px!important;height:38px!important;padding:0!important;font-size:0!important;border-radius:10px!important}
+  .talaan-top-search button::before{content:'🔍';font-size:17px}
+  .talaan-top-search.search-open input{display:block!important;width:min(58vw,260px)!important;height:38px!important}
+  .talaan-top-search.search-open button{font-size:0!important}
+  .talaan-upcoming-meta{display:grid;grid-template-columns:1fr 1fr}
+  .talaan-code-list-card{padding:12px}
+}
+@media(max-width:420px){
+  .talaan-hamburger{left:10px;top:10px;width:42px;height:42px;font-size:21px}
+  .topbar{padding-left:55px!important}
+  .talaan-header-logo{width:40px!important;height:32px!important}
+  .role-badge{max-width:120px;overflow:hidden;text-overflow:ellipsis}
 }
 
-.attendance-event-meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.attendance-event-meta span{background:#f5f7fb;border:1px solid #e3e8f1;border-radius:10px;padding:7px 10px;font-size:11px;color:#526174}.attendance-event-meta strong{color:#17266b}
-
-/* ===== FINAL RESPONSIVE DASHBOARD + MOBILE HEADER ===== */
-.dashboard-main-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;gap:20px!important;align-items:stretch!important}
+/* ===== FINAL USER-REQUESTED UI FIXES ===== */
+.dashboard-main-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) minmax(290px,330px)!important;
+  gap:18px!important;
+  align-items:stretch!important;
+}
 .dashboard-left-column,.dashboard-right-column{min-width:0!important}
 .dashboard-left-column .event-attendance-section{height:100%!important;min-height:620px!important}
 .dashboard-right-column .upcoming-activities-section{height:100%!important;margin:0!important}
-.dashboard-right-column .upcoming-activities-box{height:560px!important;max-height:calc(100vh - 300px)!important;min-height:360px!important;overflow-y:auto!important}
-.talaan-mobile-search-toggle{display:none;border:0;background:#17266b;color:#fff;border-radius:11px;font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex:0 0 auto;transition:transform .2s ease,background .2s ease}
-.talaan-mobile-search-toggle:hover{transform:translateY(-1px)}
-@media(max-width:1100px) and (min-width:701px){
-  .dashboard-main-grid{grid-template-columns:minmax(0,1fr) minmax(270px,32%)!important;gap:16px!important}
-  .dashboard-left-column .event-attendance-section{min-height:580px!important}
-  .dashboard-right-column .upcoming-activities-box{height:520px!important}
+.dashboard-right-column .upcoming-activities-box{
+  height:100%!important;
+  min-height:620px!important;
+  max-height:calc(100vh - 245px)!important;
+  overflow-y:auto!important;
 }
+.dashboard-greeting-box{margin-bottom:18px!important}
+.year-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+
+/* Header desktop: normal search bar, no search-icon button. */
+@media(min-width:701px){
+  .talaan-mobile-search-toggle{display:none!important}
+  .talaan-top-search{position:static!important;width:100%!important;max-width:520px!important;opacity:1!important;transform:none!important;overflow:visible!important;pointer-events:auto!important}
+  .talaan-top-search input{display:block!important;width:100%!important}
+  .talaan-top-search button{display:block!important;font-size:12px!important;width:auto!important}
+  .talaan-hamburger{position:fixed!important;left:18px!important;top:18px!important;width:48px!important;height:48px!important;font-size:24px!important}
+  .talaan-top-left .talaan-hamburger{position:fixed!important}
+}
+
+/* Tablet + laptop: attendance remains large on the left, upcoming stays compact on the right. */
+@media(min-width:701px) and (max-width:1100px){
+  .dashboard-main-grid{grid-template-columns:minmax(0,1fr) minmax(270px,31%)!important;gap:16px!important}
+  .dashboard-left-column .event-attendance-section{min-height:580px!important}
+  .dashboard-right-column .upcoming-activities-box{min-height:580px!important}
+}
+
+/* Phone: account/search on LEFT; menu + TALAAN logo on RIGHT. */
 @media(max-width:700px){
   .dashboard-main-grid{grid-template-columns:1fr!important;gap:14px!important}
   .dashboard-left-column{order:1!important}
   .dashboard-right-column{order:2!important}
   .dashboard-left-column .event-attendance-section{min-height:0!important;height:auto!important}
   .dashboard-right-column .upcoming-activities-section{height:auto!important}
-  .dashboard-right-column .upcoming-activities-box{height:300px!important;max-height:300px!important;min-height:220px!important}
-  .topbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:8px 10px 8px 60px!important;min-height:78px!important;position:relative!important}
-  .talaan-top-left{display:flex!important;align-items:center!important;gap:7px!important;padding-left:0!important;max-width:none!important;min-width:0!important;flex:1 1 auto!important}
+  .dashboard-right-column .upcoming-activities-box{height:300px!important;min-height:220px!important;max-height:300px!important}
+
+  .topbar{
+    display:flex!important;
+    flex-direction:row!important;
+    flex-wrap:nowrap!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+    padding:8px 10px!important;
+    min-height:66px!important;
+    position:relative!important;
+    overflow:visible!important;
+  }
+  .top-account{
+    order:1!important;
+    width:auto!important;
+    min-width:0!important;
+    flex:1 1 auto!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    flex-direction:row!important;
+    gap:7px!important;
+    margin:0!important;
+    position:relative!important;
+    overflow:visible!important;
+  }
+  .role-badge{
+    height:40px!important;
+    min-height:40px!important;
+    max-width:145px!important;
+    padding:0 11px!important;
+    display:flex!important;
+    align-items:center!important;
+    font-size:10px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    border-radius:11px!important;
+    flex:0 1 auto!important;
+  }
+  .talaan-top-search{
+    position:absolute!important;
+    right:46px!important;
+    top:50%!important;
+    width:0!important;
+    max-width:calc(100vw - 120px)!important;
+    overflow:hidden!important;
+    opacity:0!important;
+    pointer-events:none!important;
+    transform:translate(12px,-50%)!important;
+    transition:width .30s ease,opacity .18s ease,transform .30s ease!important;
+    z-index:1200!important;
+    margin:0!important;
+  }
+  .talaan-top-search.search-open{
+    width:min(58vw,270px)!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+    transform:translate(0,-50%)!important;
+  }
+  .talaan-top-search input{
+    display:block!important;
+    width:100%!important;
+    height:40px!important;
+    min-width:0!important;
+    padding:0 12px!important;
+    border:1px solid #d8dfeb!important;
+    border-radius:11px!important;
+    background:#fff!important;
+    box-shadow:0 8px 24px rgba(20,43,75,.14)!important;
+  }
+  .talaan-top-search button{
+    display:flex!important;
+    position:absolute!important;
+    right:-46px!important;
+    top:0!important;
+    width:40px!important;
+    height:40px!important;
+    padding:0!important;
+    border-radius:11px!important;
+    font-size:0!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+  .talaan-top-search button::before{content:'⌕';font-size:21px;line-height:1}
+  .talaan-top-search:not(.search-open) button{
+    display:flex!important;
+    position:absolute!important;
+    right:-46px!important;
+    opacity:1!important;
+    pointer-events:auto!important;
+  }
+  .talaan-top-left{
+    order:2!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:8px!important;
+    padding:0!important;
+    margin:0!important;
+    min-width:0!important;
+    flex:0 0 auto!important;
+    position:relative!important;
+  }
   .talaan-top-left>div{display:none!important}
-  .talaan-header-logo{display:block!important;width:auto!important;height:62px!important;max-width:112px!important;margin:0!important;object-fit:contain!important}
-  .talaan-hamburger{position:absolute!important;left:10px!important;top:18px!important;width:42px!important;height:42px!important;font-size:21px!important}
-  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:6px!important;flex:0 0 auto!important}
-  .role-badge{height:26px!important;min-height:26px!important;padding:5px 9px!important;font-size:10px!important;white-space:nowrap!important;align-self:auto!important}
-  .talaan-search-shell{width:40px!important;height:40px!important;position:relative!important}
-  .talaan-mobile-search-toggle{display:flex!important;width:40px!important;height:40px!important}
-  .talaan-top-search{position:absolute!important;right:0!important;top:46px!important;width:0!important;max-width:calc(100vw - 20px)!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;transform:translateX(12px)!important;transition:width .28s ease,opacity .2s ease,transform .28s ease!important;z-index:1200!important}
-  .talaan-top-search.open{width:min(82vw,360px)!important;opacity:1!important;pointer-events:auto!important;transform:translateX(0)!important}
-  .talaan-top-search input{width:calc(100% - 0px)!important;height:42px!important;min-width:0!important;padding:0 13px!important;border:1px solid #d8dfeb!important;border-radius:12px!important;background:#fff!important;box-shadow:0 8px 24px rgba(20,43,75,.12)!important}
-  .talaan-top-search button{display:none!important}
+  .talaan-header-logo{
+    display:block!important;
+    width:auto!important;
+    height:46px!important;
+    max-width:105px!important;
+    margin:0!important;
+    object-fit:contain!important;
+    order:2!important;
+  }
+  .talaan-top-left .talaan-hamburger,
+  .talaan-hamburger{
+    position:static!important;
+    left:auto!important;
+    top:auto!important;
+    width:42px!important;
+    height:42px!important;
+    flex:0 0 42px!important;
+    border-radius:11px!important;
+    font-size:21px!important;
+    box-shadow:0 7px 18px rgba(23,38,107,.18)!important;
+    order:1!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    margin:0!important;
+  }
+  .talaan-top-left .talaan-hamburger.hidden{display:flex!important}
+  .top-title{display:none!important}
+  .talaan-code-list-card textarea{min-height:150px!important}
 }
-@media(min-width:701px){.talaan-mobile-search-toggle{display:none!important}.talaan-top-search{position:static!important;width:100%!important;opacity:1!important;transform:none!important;overflow:visible!important;pointer-events:auto!important}}
+
+@media(max-width:420px){
+  .topbar{padding:7px 8px!important}
+  .role-badge{max-width:125px!important}
+  .talaan-header-logo{height:44px!important;max-width:96px!important}
+  .talaan-top-search.search-open{width:min(56vw,230px)!important}
+}
+
+/* Clean student code list inside each year/course grouping. */
+.talaan-course-code-list{
+  margin:10px 0 12px;
+  padding:10px 12px;
+  border:1px solid #e0e6ef;
+  border-radius:12px;
+  background:#fbfcfe;
+  max-height:180px;
+  overflow:auto;
+}
+.talaan-course-code-list-title{font-size:11px;font-weight:900;color:#17266b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.talaan-course-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:6px 0;border-bottom:1px solid #edf1f6;font-size:12px}
+.talaan-course-code-row:last-child{border-bottom:0}
+.talaan-course-code-name{font-weight:800;color:#26334d;min-width:0}
+.talaan-course-code-value{font-family:monospace;font-weight:900;color:#17266b;white-space:nowrap}
+
+/* ID preview keeps code and QR visually separated. */
+.talaan-id-card-preview{overflow:auto!important;padding:8px!important}
+.talaan-id-card-preview img{display:block!important;max-width:100%!important;height:auto!important;margin:0 auto!important}
+
 </style>
 
 </body>
