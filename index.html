@@ -5600,27 +5600,6 @@ async function downloadStudentIdZip_(students, zipName, progressLabel) {
     return;
   }
 
-  /*
-   * Open the save destination immediately while the button click still
-   * has browser user activation. This prevents Chrome/Edge from blocking
-   * the final ZIP download after the asynchronous ID generation finishes.
-   */
-  let saveHandle = null;
-  if (window.showSaveFilePicker) {
-    try {
-      saveHandle = await window.showSaveFilePicker({
-        suggestedName: zipName + '.zip',
-        types: [{
-          description: 'ZIP archive',
-          accept: {'application/zip': ['.zip']}
-        }]
-      });
-    } catch (error) {
-      if (error && error.name === 'AbortError') return;
-      saveHandle = null;
-    }
-  }
-
   const zip = new JSZip();
   const sorted = collectStudentsFromSection_(students);
   const original = document.title;
@@ -5631,85 +5610,50 @@ async function downloadStudentIdZip_(students, zipName, progressLabel) {
     for (let i = 0; i < sorted.length; i++) {
       const student = sorted[i];
       const dataUrl = await buildStudentIdPng_(student);
-      const imageBlob = await fetch(dataUrl).then(function(response) {
-        return response.blob();
-      });
-
-      zip.file(getStudentIdSafeFileName_(student), imageBlob);
+      const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+      zip.file(getStudentIdSafeFileName_(student), base64, {base64:true});
 
       if (progressLabel) {
         progressLabel.textContent =
           'Generating ' + (i + 1) + ' of ' + sorted.length + ' IDs…';
       }
-
-      await new Promise(function(resolve) {
-        setTimeout(resolve, 0);
-      });
+      await new Promise(function(resolve){ setTimeout(resolve, 0); });
     }
 
-    /*
-     * PNG files are already compressed. STORE avoids wasting CPU on
-     * DEFLATE and makes large TALAAN ZIPs substantially more reliable.
-     */
+    if (progressLabel) progressLabel.textContent = 'Preparing ZIP…';
+
     const blob = await zip.generateAsync({
       type: 'blob',
       compression: 'STORE'
     });
 
-    if (saveHandle) {
-      const writable = await saveHandle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = zipName + '.zip';
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setTimeout(function() {
-        URL.revokeObjectURL(url);
-      }, 5000);
+    /*
+     * Do not force the browser to download after an async operation.
+     * Browsers can block that synthetic click because the original
+     * button activation has already ended. Instead, create a real
+     * download link for the user to click.
+     */
+    const url = URL.createObjectURL(blob);
+    if (progressLabel) {
+      progressLabel.innerHTML =
+        '<a href="' + url + '" download="' + escapeAttr_(zipName + '.zip') + '" ' +
+        'style="display:inline-block;margin-top:6px;padding:9px 14px;border-radius:9px;' +
+        'background:#17266b;color:#fff;text-decoration:none;font-weight:800;">' +
+        '⬇️ Download ZIP</a>';
     }
   } catch (error) {
     alert('Unable to create ZIP: ' + (error.message || error));
+    if (progressLabel) progressLabel.textContent = '';
   } finally {
     document.title = original;
-    if (progressLabel) progressLabel.textContent = '';
   }
 }
+
 async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
   if (!yearGroup) return;
   if (typeof JSZip === 'undefined') {
     alert('ZIP library is not available. Please refresh the page and try again.');
     return;
-  }
-
-  const safeYearLabel = String(yearLabel || 'Year')
-    .replace(/[^a-z0-9]+/gi, '_');
-
-  /*
-   * Open the save destination immediately while the button click still
-   * has browser user activation. This prevents Chrome/Edge from blocking
-   * the final ZIP download after the asynchronous ID generation finishes.
-   */
-  let saveHandle = null;
-  if (window.showSaveFilePicker) {
-    try {
-      saveHandle = await window.showSaveFilePicker({
-        suggestedName: 'TALAAN_IDs_' + safeYearLabel + '.zip',
-        types: [{
-          description: 'ZIP archive',
-          accept: {'application/zip': ['.zip']}
-        }]
-      });
-    } catch (error) {
-      if (error && error.name === 'AbortError') return;
-      saveHandle = null;
-    }
   }
 
   const zip = new JSZip();
@@ -5718,104 +5662,62 @@ async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
 
   try {
     document.title = 'Generating TALAAN IDs...';
-
-    const courseNames =
-      getSortedCourseNamesClient_(yearGroup.courses);
+    const courseNames = getSortedCourseNamesClient_(yearGroup.courses);
 
     for (let ci = 0; ci < courseNames.length; ci++) {
       const courseName = courseNames[ci];
       const course = yearGroup.courses[courseName];
       const courseFolder = zip.folder(courseName);
-
-      const sections =
-        Object.keys(course.sections).sort(function(a, b) {
-          return a.localeCompare(
-            b,
-            undefined,
-            {numeric: true}
-          );
-        });
+      const sections = Object.keys(course.sections).sort(function(a,b){
+        return a.localeCompare(b,undefined,{numeric:true});
+      });
 
       for (let si = 0; si < sections.length; si++) {
         const section = sections[si];
-
-        const sectionFolder =
-          courseFolder.folder(
-            'Section_' +
-            section.replace(/[^a-z0-9_-]+/gi, '_')
-          );
-
-        const students =
-          collectStudentsFromSection_(
-            course.sections[section]
-          );
+        const sectionFolder = courseFolder.folder(
+          'Section_' + section.replace(/[^a-z0-9_-]+/gi,'_')
+        );
+        const students = collectStudentsFromSection_(course.sections[section]);
 
         for (let i = 0; i < students.length; i++) {
-          const dataUrl =
-            await buildStudentIdPng_(students[i]);
-
-          const imageBlob =
-            await fetch(dataUrl).then(function(response) {
-              return response.blob();
-            });
-
+          const dataUrl = await buildStudentIdPng_(students[i]);
+          const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
           sectionFolder.file(
             getStudentIdSafeFileName_(students[i]),
-            imageBlob
+            base64,
+            {base64:true}
           );
-
           count++;
-
-          if (progressLabel) {
-            progressLabel.textContent =
-              'Generating ' + count + ' IDs…';
-          }
-
-          await new Promise(function(resolve) {
-            setTimeout(resolve, 0);
-          });
+          if (progressLabel) progressLabel.textContent = 'Generating ' + count + ' IDs…';
+          await new Promise(function(resolve){ setTimeout(resolve,0); });
         }
       }
     }
 
-    /*
-     * PNG files are already compressed. STORE avoids wasting CPU on
-     * DEFLATE and makes large TALAAN ZIPs substantially more reliable.
-     */
+    if (progressLabel) progressLabel.textContent = 'Preparing ZIP…';
+
     const blob = await zip.generateAsync({
       type: 'blob',
       compression: 'STORE'
     });
 
-    const fileName =
-      'TALAAN_IDs_' + safeYearLabel + '.zip';
+    const zipName = 'TALAAN_IDs_' + yearLabel.replace(/[^a-z0-9]+/gi,'_') + '.zip';
+    const url = URL.createObjectURL(blob);
 
-    if (saveHandle) {
-      const writable = await saveHandle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    } else {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      setTimeout(function() {
-        URL.revokeObjectURL(url);
-      }, 5000);
+    if (progressLabel) {
+      progressLabel.innerHTML =
+        '<a href="' + url + '" download="' + escapeAttr_(zipName) + '" ' +
+        'style="display:inline-block;margin-top:6px;padding:9px 14px;border-radius:9px;' +
+        'background:#17266b;color:#fff;text-decoration:none;font-weight:800;">' +
+        '⬇️ Download ZIP</a>';
     }
   } catch (error) {
     alert('Unable to create year ZIP: ' + (error.message || error));
+    if (progressLabel) progressLabel.textContent = '';
   } finally {
     document.title = original;
-    if (progressLabel) progressLabel.textContent = '';
   }
 }
-
 
 async function showStudentDirectory_() {
   const session = currentSession_();
