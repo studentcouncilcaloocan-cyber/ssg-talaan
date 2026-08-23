@@ -2756,13 +2756,11 @@ function createAttendanceTable(
       }
 
       const isNameCell = c === 0 && studentName;
-      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin';
-      if (isNameCell && canOpenStudentRecord) {
+      if (isNameCell) {
         html += '<td class="' + className + '"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromAttendance_(' + JSON.stringify(studentName) + ',' + JSON.stringify(studentSection) + ',' + JSON.stringify(studentYear) + ')">' + escapeHtml(value) + '</button></td>';
       } else {
         html += '<td class="' + className + '">' + escapeHtml(value) + '</td>';
       }
-
     });
     html += '</tr>';
   }
@@ -3339,23 +3337,22 @@ async function addEvent() {
 
 async function refreshDashboardData() {
 
-  // Always request a fresh dashboard snapshot after a completed action.
-  // This prevents a cached Apps Script response from making the UI appear
-  // stale after adding, editing, or deleting data.
-  const data = await apiRequest('dashboard', {
-    _t: Date.now()
-  });
+  const data =
+    await apiRequest(
+      'dashboard'
+    );
 
-  if (data && data.success === true) {
-    dashboardData = data;
-    return data;
+
+  if (
+    data &&
+    data.success === true
+  ) {
+
+    dashboardData =
+      data;
+
   }
 
-  throw new Error(
-    data && data.error
-      ? data.error
-      : 'Unable to refresh TALAAN data.'
-  );
 }
 
 
@@ -5590,221 +5587,75 @@ function collectStudentsFromSection_(sectionStudents) {
   });
 }
 
-function talaanZipCrc32_(bytes) {
-  let crc = 0xffffffff;
-  for (let i = 0; i < bytes.length; i++) {
-    crc ^= bytes[i];
-    for (let j = 0; j < 8; j++) {
-      crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0;
-}
-
-function talaanZipDosDateTime_() {
-  const now = new Date();
-  const year = Math.max(1980, now.getFullYear());
-  const date = ((year - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
-  const time = (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
-  return {date: date, time: time};
-}
-
-function talaanZipUtf8_(text) {
-  return new TextEncoder().encode(String(text || ''));
-}
-
-function talaanDataUrlBytes_(dataUrl) {
-  const comma = String(dataUrl || '').indexOf(',');
-  if (comma < 0) throw new Error('Invalid PNG data.');
-  const binary = atob(String(dataUrl).slice(comma + 1));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-function talaanWriteU16_(view, offset, value) {
-  view.setUint16(offset, value & 0xffff, true);
-}
-
-function talaanWriteU32_(view, offset, value) {
-  view.setUint32(offset, value >>> 0, true);
-}
-
-function talaanBuildZipBlob_(files) {
-  const localParts = [];
-  const centralParts = [];
-  let offset = 0;
-  const dt = talaanZipDosDateTime_();
-
-  files.forEach(function(file) {
-    const nameBytes = talaanZipUtf8_(file.name);
-    const data = file.bytes;
-    const crc = talaanZipCrc32_(data);
-
-    const local = new Uint8Array(30 + nameBytes.length);
-    const lv = new DataView(local.buffer);
-    talaanWriteU32_(lv, 0, 0x04034b50);
-    talaanWriteU16_(lv, 4, 20);
-    talaanWriteU16_(lv, 6, 0x0800);
-    talaanWriteU16_(lv, 8, 0);
-    talaanWriteU16_(lv, 10, dt.time);
-    talaanWriteU16_(lv, 12, dt.date);
-    talaanWriteU32_(lv, 14, crc);
-    talaanWriteU32_(lv, 18, data.length);
-    talaanWriteU32_(lv, 22, data.length);
-    talaanWriteU16_(lv, 26, nameBytes.length);
-    talaanWriteU16_(lv, 28, 0);
-    local.set(nameBytes, 30);
-    localParts.push(local, data);
-
-    const central = new Uint8Array(46 + nameBytes.length);
-    const cv = new DataView(central.buffer);
-    talaanWriteU32_(cv, 0, 0x02014b50);
-    talaanWriteU16_(cv, 4, 20);
-    talaanWriteU16_(cv, 6, 20);
-    talaanWriteU16_(cv, 8, 0x0800);
-    talaanWriteU16_(cv, 10, 0);
-    talaanWriteU16_(cv, 12, dt.time);
-    talaanWriteU16_(cv, 14, dt.date);
-    talaanWriteU32_(cv, 16, crc);
-    talaanWriteU32_(cv, 20, data.length);
-    talaanWriteU32_(cv, 24, data.length);
-    talaanWriteU16_(cv, 28, nameBytes.length);
-    talaanWriteU16_(cv, 30, 0);
-    talaanWriteU16_(cv, 32, 0);
-    talaanWriteU16_(cv, 34, 0);
-    talaanWriteU16_(cv, 36, 0);
-    talaanWriteU32_(cv, 38, 0);
-    talaanWriteU32_(cv, 42, offset);
-    central.set(nameBytes, 46);
-    centralParts.push(central);
-
-    offset += local.length + data.length;
-  });
-
-  const centralSize = centralParts.reduce(function(sum, part) { return sum + part.length; }, 0);
-  const end = new Uint8Array(22);
-  const ev = new DataView(end.buffer);
-  talaanWriteU32_(ev, 0, 0x06054b50);
-  talaanWriteU16_(ev, 4, 0);
-  talaanWriteU16_(ev, 6, 0);
-  talaanWriteU16_(ev, 8, files.length);
-  talaanWriteU16_(ev, 10, files.length);
-  talaanWriteU32_(ev, 12, centralSize);
-  talaanWriteU32_(ev, 16, offset);
-  talaanWriteU16_(ev, 20, 0);
-
-  return new Blob(localParts.concat(centralParts, [end]), {type:'application/zip'});
-}
-
-function talaanOfferZipSave_(blob, fileName, saveHandlePromise, progressLabel) {
-  return saveHandlePromise.then(function(handle) {
-    return handle.createWritable().then(function(writable) {
-      return writable.write(blob).then(function() {
-        return writable.close();
-      });
-    });
-  }).catch(function(error) {
-    if (error && error.name === 'AbortError') throw error;
-    const url = URL.createObjectURL(blob);
-    if (progressLabel) {
-      progressLabel.innerHTML =
-        '<a href="' + url + '" download="' + escapeAttr_(fileName) + '" ' +
-        'style="display:inline-block;margin-top:6px;padding:9px 14px;border-radius:9px;' +
-        'background:#17266b;color:#fff;text-decoration:none;font-weight:800;">' +
-        '⬇️ Download ZIP</a>';
-    }
-  });
-}
-
-function talaanBeginZipSave_(fileName) {
-  if (!window.showSaveFilePicker) return null;
-  try {
-    return window.showSaveFilePicker({
-      suggestedName: fileName,
-      types: [{description:'ZIP archive', accept:{'application/zip':['.zip']}}]
-    });
-  } catch (error) {
-    return null;
-  }
-}
-
 async function downloadStudentIdZip_(students, zipName, progressLabel) {
   if (!students || !students.length) {
     alert('No students found in this group.');
     return;
   }
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library is not available. Please refresh the page and try again.');
+    return;
+  }
 
-  const fileName = zipName + '.zip';
-  // Start the native save dialog while the original button gesture is still active.
-  const saveHandlePromise = talaanBeginZipSave_(fileName);
-  const files = [];
+  const zip = new JSZip();
   const sorted = collectStudentsFromSection_(students);
   const original = document.title;
 
   try {
     document.title = 'Generating TALAAN IDs...';
     for (let i = 0; i < sorted.length; i++) {
-      const dataUrl = await buildStudentIdPng_(sorted[i]);
-      files.push({name:getStudentIdSafeFileName_(sorted[i]), bytes:talaanDataUrlBytes_(dataUrl)});
-      if (progressLabel) progressLabel.textContent = 'Generating ' + (i + 1) + ' of ' + sorted.length + ' IDs…';
+      const student = sorted[i];
+      const dataUrl = await buildStudentIdPng_(student);
+      const base64 = dataUrl.split(',')[1];
+      zip.file(getStudentIdSafeFileName_(student), base64, {base64:true});
+      if (progressLabel) progressLabel.textContent = 'Generating ' + (i+1) + ' of ' + sorted.length + ' IDs…';
       await new Promise(function(resolve){ setTimeout(resolve, 0); });
     }
 
-    if (progressLabel) progressLabel.textContent = 'Preparing ZIP…';
-    const blob = talaanBuildZipBlob_(files);
-
-    if (saveHandlePromise) {
-      try {
-        await talaanOfferZipSave_(blob, fileName, saveHandlePromise, progressLabel);
-        if (progressLabel) progressLabel.textContent = 'ZIP saved successfully.';
-      } catch (error) {
-        if (error && error.name === 'AbortError') {
-          if (progressLabel) progressLabel.textContent = 'ZIP save cancelled.';
-          return;
-        }
-        throw error;
-      }
-    } else {
-      const url = URL.createObjectURL(blob);
-      if (progressLabel) {
-        progressLabel.innerHTML = '<a href="' + url + '" download="' + escapeAttr_(fileName) + '" style="display:inline-block;margin-top:6px;padding:9px 14px;border-radius:9px;background:#17266b;color:#fff;text-decoration:none;font-weight:800;">⬇️ Download ZIP</a>';
-      }
-    }
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = zipName + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
   } catch (error) {
     alert('Unable to create ZIP: ' + (error.message || error));
-    if (progressLabel) progressLabel.textContent = '';
   } finally {
     document.title = original;
+    if (progressLabel) progressLabel.textContent = '';
   }
 }
 
 async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
   if (!yearGroup) return;
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP library is not available. Please refresh the page and try again.');
+    return;
+  }
 
-  const fileName = 'TALAAN_IDs_' + yearLabel.replace(/[^a-z0-9]+/gi,'_') + '.zip';
-  const saveHandlePromise = talaanBeginZipSave_(fileName);
-  const files = [];
+  const zip = new JSZip();
   let count = 0;
   const original = document.title;
 
   try {
     document.title = 'Generating TALAAN IDs...';
     const courseNames = getSortedCourseNamesClient_(yearGroup.courses);
-
     for (let ci = 0; ci < courseNames.length; ci++) {
       const courseName = courseNames[ci];
       const course = yearGroup.courses[courseName];
+      const courseFolder = zip.folder(courseName);
       const sections = Object.keys(course.sections).sort(function(a,b){ return a.localeCompare(b,undefined,{numeric:true}); });
 
       for (let si = 0; si < sections.length; si++) {
         const section = sections[si];
+        const sectionFolder = courseFolder.folder('Section_' + section.replace(/[^a-z0-9_-]+/gi,'_'));
         const students = collectStudentsFromSection_(course.sections[section]);
-        const sectionPath = courseName + '/Section_' + section.replace(/[^a-z0-9_-]+/gi,'_') + '/';
-
         for (let i = 0; i < students.length; i++) {
           const dataUrl = await buildStudentIdPng_(students[i]);
-          files.push({name:sectionPath + getStudentIdSafeFileName_(students[i]), bytes:talaanDataUrlBytes_(dataUrl)});
+          sectionFolder.file(getStudentIdSafeFileName_(students[i]), dataUrl.split(',')[1], {base64:true});
           count++;
           if (progressLabel) progressLabel.textContent = 'Generating ' + count + ' IDs…';
           await new Promise(function(resolve){ setTimeout(resolve,0); });
@@ -5812,31 +5663,20 @@ async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
       }
     }
 
-    if (progressLabel) progressLabel.textContent = 'Preparing ZIP…';
-    const blob = talaanBuildZipBlob_(files);
-
-    if (saveHandlePromise) {
-      try {
-        await talaanOfferZipSave_(blob, fileName, saveHandlePromise, progressLabel);
-        if (progressLabel) progressLabel.textContent = 'ZIP saved successfully.';
-      } catch (error) {
-        if (error && error.name === 'AbortError') {
-          if (progressLabel) progressLabel.textContent = 'ZIP save cancelled.';
-          return;
-        }
-        throw error;
-      }
-    } else {
-      const url = URL.createObjectURL(blob);
-      if (progressLabel) {
-        progressLabel.innerHTML = '<a href="' + url + '" download="' + escapeAttr_(fileName) + '" style="display:inline-block;margin-top:6px;padding:9px 14px;border-radius:9px;background:#17266b;color:#fff;text-decoration:none;font-weight:800;">⬇️ Download ZIP</a>';
-      }
-    }
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'TALAAN_IDs_' + yearLabel.replace(/[^a-z0-9]+/gi,'_') + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
   } catch (error) {
     alert('Unable to create year ZIP: ' + (error.message || error));
-    if (progressLabel) progressLabel.textContent = '';
   } finally {
     document.title = original;
+    if (progressLabel) progressLabel.textContent = '';
   }
 }
 
@@ -6072,7 +5912,6 @@ async function openStudentRecordFromSearch_(name, section, yearLevel) {
 }
 
 async function openStudentRecord_(student) {
-  if (!(currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
   try {
     const result = await apiRequest('studentrecord', student);
     if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
@@ -6302,12 +6141,8 @@ async function addEvent() {
 }
 
 async function refreshDashboardData() {
-  const data = await apiRequest('dashboard', {_t: Date.now()});
-  if (data && data.success === true) {
-    dashboardData = data;
-    return data;
-  }
-  throw new Error(data && data.error ? data.error : 'Unable to refresh TALAAN data.');
+  const data = await apiRequest('dashboard');
+  if (data && data.success === true) dashboardData=data;
 }
 
 function openScanner() {
