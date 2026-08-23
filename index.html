@@ -2756,11 +2756,13 @@ function createAttendanceTable(
       }
 
       const isNameCell = c === 0 && studentName;
-      if (isNameCell) {
+      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin';
+      if (isNameCell && canOpenStudentRecord) {
         html += '<td class="' + className + '"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromAttendance_(' + JSON.stringify(studentName) + ',' + JSON.stringify(studentSection) + ',' + JSON.stringify(studentYear) + ')">' + escapeHtml(value) + '</button></td>';
       } else {
         html += '<td class="' + className + '">' + escapeHtml(value) + '</td>';
       }
+
     });
     html += '</tr>';
   }
@@ -3337,22 +3339,23 @@ async function addEvent() {
 
 async function refreshDashboardData() {
 
-  const data =
-    await apiRequest(
-      'dashboard'
-    );
+  // Always request a fresh dashboard snapshot after a completed action.
+  // This prevents a cached Apps Script response from making the UI appear
+  // stale after adding, editing, or deleting data.
+  const data = await apiRequest('dashboard', {
+    _t: Date.now()
+  });
 
-
-  if (
-    data &&
-    data.success === true
-  ) {
-
-    dashboardData =
-      data;
-
+  if (data && data.success === true) {
+    dashboardData = data;
+    return data;
   }
 
+  throw new Error(
+    data && data.error
+      ? data.error
+      : 'Unable to refresh TALAAN data.'
+  );
 }
 
 
@@ -5912,6 +5915,7 @@ async function openStudentRecordFromSearch_(name, section, yearLevel) {
 }
 
 async function openStudentRecord_(student) {
+  if (!(currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
   try {
     const result = await apiRequest('studentrecord', student);
     if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
@@ -6141,8 +6145,12 @@ async function addEvent() {
 }
 
 async function refreshDashboardData() {
-  const data = await apiRequest('dashboard');
-  if (data && data.success === true) dashboardData=data;
+  const data = await apiRequest('dashboard', {_t: Date.now()});
+  if (data && data.success === true) {
+    dashboardData = data;
+    return data;
+  }
+  throw new Error(data && data.error ? data.error : 'Unable to refresh TALAAN data.');
 }
 
 function openScanner() {
