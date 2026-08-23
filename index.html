@@ -4766,6 +4766,11 @@ function renderTalaanMenu_(activeId) {
   html += '<div class="talaan-menu-role">' + escapeHtml(role + year) + '</div>';
   html += '</div>';
 
+  html += '<div class="talaan-menu-search">' +
+    '<input id="talaanMenuSearchInput" type="search" placeholder="Search student..." autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchStudentFromMenu_();}">' +
+    '<button type="button" onclick="searchStudentFromMenu_()">SEARCH</button>' +
+  '</div>';
+
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
@@ -5255,6 +5260,31 @@ function showDashboardSheet() {
 
   html += '</div>';
   setPage_(html);
+  arrangeDashboardLayout_();
+}
+
+function arrangeDashboardLayout_() {
+  const page = document.querySelector('#dashboardContent .talaan-page');
+  if (!page) return;
+  const greeting = page.querySelector('.dashboard-greeting-box');
+  const upcoming = page.querySelector('.upcoming-activities-section');
+  const event = page.querySelector('.event-attendance-section');
+  if (!greeting || !upcoming || !event) return;
+
+  let grid = page.querySelector('.dashboard-main-grid');
+  if (!grid) {
+    grid = document.createElement('div');
+    grid.className = 'dashboard-main-grid';
+    const left = document.createElement('div');
+    left.className = 'dashboard-left-column';
+    const right = document.createElement('div');
+    right.className = 'dashboard-right-column';
+    grid.appendChild(left);
+    grid.appendChild(right);
+    page.insertBefore(grid, event);
+    left.appendChild(event);
+    right.appendChild(upcoming);
+  }
 }
 
 function renderYearCard(year) {
@@ -5778,6 +5808,10 @@ async function showStudentDirectory_() {
         html += '<details class="talaan-id-course" open>' +
           '<summary><div class="talaan-id-summary-row"><span>' + escapeHtml(courseName) + '</span><span class="talaan-id-summary-meta">' + courseStudents.length + ' student' + (courseStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
           '<div class="talaan-id-course-body">' +
+            '<div class="talaan-code-summary">' +
+              '<div class="talaan-code-summary-head"><strong>' + escapeHtml(courseName) + ' Codes</strong><button type="button" class="talaan-id-action secondary" data-copy-target="courseCodes_' + escapeAttr_(year + '_' + courseName) + '" onclick="copyTextFromElement_(\'courseCodes_' + escapeAttr_(year + '_' + courseName) + '\')">COPY ALL CODES</button></div>' +
+              '<textarea readonly id="courseCodes_' + escapeAttr_(year + '_' + courseName) + '" class="talaan-code-textarea">' + escapeHtml(courseStudents.map(function(st){ return String(st.name || '') + ' — ' + String(st.studentId || ''); }).join('\n')) + '</textarea>' +
+            '</div>' +
             '<div class="talaan-id-actions" style="margin:8px 0"><button class="talaan-id-action secondary course-zip-button" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].allStudents, ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_' + courseName) + ', this.nextElementSibling)">Download ' + escapeHtml(courseName) + ' ZIP</button><span class="talaan-id-summary-meta"></span></div>';
 
         sections.forEach(function(section) {
@@ -5785,6 +5819,10 @@ async function showStudentDirectory_() {
           html += '<details class="talaan-id-section">' +
             '<summary><div class="talaan-id-summary-row"><span>Section ' + escapeHtml(section) + '</span><span class="talaan-id-summary-meta">' + sectionStudents.length + ' student' + (sectionStudents.length === 1 ? '' : 's') + '</span></div></summary>' +
             '<div class="talaan-id-section-body">' +
+              '<div class="talaan-code-summary section-code-summary">' +
+                '<div class="talaan-code-summary-head"><strong>Section ' + escapeHtml(section) + ' Codes</strong><button type="button" class="talaan-id-action secondary" data-copy-target="sectionCodes_' + escapeAttr_(year + '_' + courseName + '_' + section) + '" onclick="copyTextFromElement_(\'sectionCodes_' + escapeAttr_(year + '_' + courseName + '_' + section) + '\')">COPY ALL CODES</button></div>' +
+                '<textarea readonly id="sectionCodes_' + escapeAttr_(year + '_' + courseName + '_' + section) + '" class="talaan-code-textarea">' + escapeHtml(sectionStudents.map(function(st){ return String(st.name || '') + ' — ' + String(st.studentId || ''); }).join('\n')) + '</textarea>' +
+              '</div>' +
               '<div class="talaan-id-actions" style="margin:6px 0"><button class="talaan-id-action secondary" onclick="downloadStudentIdZip_(window.talaanStudentDirectoryGroups[' + JSON.stringify(year) + '].courses[' + JSON.stringify(courseName) + '].sections[' + JSON.stringify(section) + '], ' + JSON.stringify('TALAAN_IDs_' + getYearLabelClient_(year) + '_Section_' + section) + ', this.nextElementSibling)">Download Section ZIP</button><span class="talaan-id-summary-meta"></span></div>';
 
           sectionStudents.forEach(function(student) {
@@ -5869,6 +5907,33 @@ async function searchStudent_() {
       return '<div class="talaan-result-card"><div class="talaan-result-name">' + escapeHtml(s.name) + '</div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
+}
+
+async function searchStudentFromMenu_() {
+  const menuInput = document.getElementById('talaanMenuSearchInput');
+  const headerInput = document.getElementById('talaanHeaderSearchInput');
+  const query = menuInput?.value.trim() || '';
+  if (!query) { menuInput?.focus(); return; }
+  if (headerInput) headerInput.value = query;
+  await searchStudentFromHeader_();
+}
+
+async function copyTextFromElement_(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.value != null ? el.value : el.textContent;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      const btn = document.querySelector('[data-copy-target="' + id.replace(/"/g,'\"') + '"]');
+      if (btn) { const old = btn.textContent; btn.textContent = 'COPIED'; setTimeout(function(){ btn.textContent = old; }, 1200); }
+    } else {
+      el.focus(); el.select(); document.execCommand('copy');
+    }
+  } catch (e) {
+    el.focus(); el.select();
+    try { document.execCommand('copy'); } catch (_) {}
+  }
 }
 
 async function searchStudentFromHeader_() {
@@ -6332,6 +6397,32 @@ window.addEventListener('DOMContentLoaded', function(){
   .year-grid{grid-template-columns:1fr!important}
 }
 
+
+/* STRICT UI-ONLY PATCH: requested UI changes only */
+.dashboard-main-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(300px,32%)!important;gap:18px!important;align-items:start!important}
+.dashboard-left-column,.dashboard-right-column{min-width:0!important}
+.year-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important}
+.settings-list{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;align-items:start!important}
+.talaan-code-summary{margin:8px 0 12px;border:1px solid #e3e8f1;border-radius:13px;background:#f8fafc;padding:10px}
+.talaan-code-summary-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
+.talaan-code-summary-head strong{color:#17266b;font-size:12px}
+.talaan-code-textarea{display:block;width:100%;min-height:76px;max-height:150px;resize:vertical;box-sizing:border-box;border:1px solid #dce3ee;border-radius:9px;background:#fff;color:#334155;padding:9px;font:12px/1.5 Arial,sans-serif;outline:none}
+.talaan-menu-search{display:none}
+@media (max-width:1200px) and (min-width:701px){.settings-list{grid-template-columns:repeat(2,minmax(0,1fr))!important}.dashboard-main-grid{grid-template-columns:minmax(0,1fr) 280px!important}}
+@media (max-width:700px){
+ .topbar{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;min-height:76px!important;padding:10px 14px!important}
+ .top-title{display:none!important}.top-account{display:none!important}
+ .talaan-hamburger{position:static!important;flex:0 0 48px!important;width:48px!important;height:48px!important;margin:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:23px!important}
+ .talaan-top-left{display:flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:0!important;padding:0!important;margin:0!important}
+ .talaan-header-logo{display:block!important;width:auto!important;height:48px!important;max-width:120px!important;margin:0!important;object-fit:contain!important}.talaan-top-left>div{display:none!important}
+ .talaan-menu-search{display:flex!important;align-items:center!important;gap:7px!important;padding:4px 0 14px!important;margin:0 0 4px!important;border-bottom:1px solid #edf0f4!important}
+ .talaan-menu-search input{flex:1 1 auto!important;min-width:0!important;height:40px!important;margin:0!important;border:1px solid #dce3ee!important;border-radius:11px!important;padding:0 12px!important;background:#f8fafc!important;outline:none!important}
+ .talaan-menu-search button{width:auto!important;height:40px!important;margin:0!important;border:0!important;border-radius:11px!important;background:#17266b!important;color:#fff!important;padding:0 13px!important;font-size:11px!important;font-weight:900!important}
+ .dashboard-main-grid{display:flex!important;flex-direction:column!important;gap:16px!important}
+ .dashboard-left-column,.dashboard-right-column{width:100%!important;min-width:0!important}.dashboard-left-column{order:2!important}.dashboard-right-column{order:1!important}
+ .year-grid{grid-template-columns:1fr!important}.settings-list{grid-template-columns:1fr!important}
+ .talaan-code-summary-head{align-items:flex-start;flex-direction:column}
+}
 </style>
 
 </body>
