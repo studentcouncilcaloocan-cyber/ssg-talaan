@@ -5854,7 +5854,7 @@ async function searchStudent_() {
     results.innerHTML = data.students.map(function(s){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
-      return '<div class="talaan-result-card"><div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
+      return '<div class="talaan-result-card"><div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + (currentSession_().role === 'Secretary' && s.studentId ? ' • TALAAN ID: ' + escapeHtml(s.studentId) : '') + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
 }
@@ -5915,7 +5915,7 @@ async function searchStudentFromHeader_() {
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
       return '<div class="talaan-result-card">' +
         '<div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div>' +
-        '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div>' +
+        '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + (currentSession_().role === 'Secretary' && s.studentId ? ' • TALAAN ID: ' + escapeHtml(s.studentId) : '') + '</div>' +
         '<div class="talaan-stat-grid">' +
           '<div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div>' +
           '<div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div>' +
