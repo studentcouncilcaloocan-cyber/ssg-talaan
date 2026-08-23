@@ -5935,11 +5935,12 @@ async function searchStudentFromHeader_() {
     let html = '<div class="attendance-card talaan-search-page"><h2 class="section-heading">🔎 Student Search Results</h2>' +
       '<p class="talaan-search-hint">Keyword: <strong>' + escapeHtml(query) + '</strong> • ' + data.students.length + ' match' + (data.students.length === 1 ? '' : 'es') + '</p>';
 
-    html += data.students.map(function(s){
+    window.talaanSearchResultsStudents_ = data.students;
+    html += data.students.map(function(s, index){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
       const talaanIdButton = (currentRole === 'Secretary' && s.studentId)
-        ? '<div style="margin-top:12px"><button type="button" class="primary-button" style="width:auto;margin:0" onclick="openSearchStudentIdPreview_(' + JSON.stringify(s) + ')">🪪 View TALAAN ID & QR</button></div>'
+        ? '<div style="margin-top:12px"><button type="button" class="primary-button" style="width:auto;margin:0" onclick="openSearchStudentIdPreviewByIndex_(' + index + ')">🪪 View TALAAN ID & QR</button></div>'
         : '';
       return '<div class="talaan-result-card">' +
         '<div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div>' +
@@ -5959,6 +5960,12 @@ async function searchStudentFromHeader_() {
   }
 }
 
+
+function openSearchStudentIdPreviewByIndex_(index) {
+  const list = window.talaanSearchResultsStudents_ || [];
+  const student = list[Number(index)];
+  openSearchStudentIdPreview_(student);
+}
 
 function openSearchStudentIdPreview_(student) {
   if (currentRole !== 'Secretary' || !student || !student.studentId) return;
