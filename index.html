@@ -1744,6 +1744,8 @@ let scanner = null;
 let scanning = false;
 let processing = false;
 let scannerRestartTimer = null;
+let talaanActivePage_ = 'dashboard';
+let talaanActiveAttendanceSheet_ = '';
 
 
 function apiRequest(action, params = {}) {
@@ -3337,6 +3339,21 @@ async function addEvent() {
    REFRESH
 ===================================================== */
 
+async function refreshCurrentPageAfterMutation_() {
+  await refreshDashboardData();
+  if (talaanActivePage_ === 'settings') {
+    showSettings();
+  } else if (talaanActivePage_ === 'attendance') {
+    await showAttendance(talaanActiveAttendanceSheet_ || ('Attendance' + (currentSession_().yearLevel || '1')));
+  } else if (talaanActivePage_ === 'dashboard') {
+    await loadDashboard('__NO_DATE__');
+  } else if (talaanActivePage_ === 'warnings') {
+    await showWarnings_();
+  } else if (talaanActivePage_ === 'studentdirectory') {
+    await showStudentDirectory_();
+  }
+}
+
 async function refreshDashboardData() {
 
   // Always request a fresh dashboard snapshot after a completed action.
@@ -4681,13 +4698,14 @@ function renderTalaanMenu_(activeId) {
   const session = currentSession_();
   const role = session.role || currentRole || '';
   const name = session.name || role;
+  const position = session.position || role;
   const year = session.yearLevel && session.yearLevel !== 'ALL' ? ' • ' + getYearLabelClient_(session.yearLevel) : '';
 
   let html = '<div class="talaan-menu-head">';
   html += '<button class="close-menu" onclick="closeTalaanMenu_()">×</button>';
   html += '<img class="talaan-menu-logo" src="' + TALAAN_LOGO_DATA + '" alt="TALAAN">';
   html += '<div class="talaan-menu-user">' + escapeHtml(name) + '</div>';
-  html += '<div class="talaan-menu-role">' + escapeHtml(role + year) + '</div>';
+  html += '<div class="talaan-menu-role">' + escapeHtml(role + (position ? ' • ' + position : '') + year) + '</div>';
   html += '</div>';
 
   if (role !== 'Class Sec') {
@@ -5056,7 +5074,10 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   showTalaanLoading_();
 
   const badge = document.getElementById('roleBadge');
-  if (badge) badge.textContent = role;
+  if (badge) {
+    const position = suppliedSession?.position || currentSession_().position || '';
+    badge.textContent = role + (position ? ' • ' + position : '');
+  }
 
   ['navAttendance1','navAttendance2','navAttendance3','navAttendance4'].forEach(function(id){
     const el = document.getElementById(id);
@@ -5263,17 +5284,21 @@ async function changeDashboardDate(selectedDate) {
 }
 
 async function talaanNavigate_(page, sheetName) {
+  talaanActivePage_ = page;
+  talaanActiveAttendanceSheet_ = sheetName || talaanActiveAttendanceSheet_ || '';
   closeTalaanMenu_();
   if (page === 'dashboard') { renderTalaanMenu_('dashboard'); await loadDashboard('__NO_DATE__'); return; }
   if (page === 'attendance') { await showAttendance(sheetName); return; }
   if (page === 'profile') { await showStudentProfile_(); return; }
   if (page === 'warnings') { await showWarnings_(); return; }
-  if (page === 'settings') { showSettings(); return; }
+  if (page === 'settings') { talaanActivePage_ = 'settings'; showSettings(); return; }
   if (page === 'studentdirectory') { await showStudentDirectory_(); return; }
   if (page === 'scanner') { openScanner(); return; }
 }
 
 async function showAttendance(sheetName) {
+  talaanActivePage_ = 'attendance';
+  talaanActiveAttendanceSheet_ = sheetName || talaanActiveAttendanceSheet_ || '';
   const session = currentSession_();
   const role = session.role || currentRole;
   if (role === 'Student' || role === 'Teacher' || role === 'Class Sec') sheetName = 'Attendance' + session.yearLevel;
@@ -5913,15 +5938,18 @@ async function searchStudentFromHeader_() {
     html += data.students.map(function(s){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
+      const talaanIdButton = (currentRole === 'Secretary' && s.studentId)
+        ? '<div style="margin-top:12px"><button type="button" class="primary-button" style="width:auto;margin:0" onclick="openSearchStudentIdPreview_(' + JSON.stringify(s) + ')">🪪 View TALAAN ID & QR</button></div>'
+        : '';
       return '<div class="talaan-result-card">' +
         '<div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div>' +
-        '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + (currentSession_().role === 'Secretary' && s.studentId ? ' • TALAAN ID: ' + escapeHtml(s.studentId) : '') + '</div>' +
+        '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div>' +
         '<div class="talaan-stat-grid">' +
           '<div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div>' +
           '<div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div>' +
           '<div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div>' +
           '<div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div>' +
-        '</div></div>';
+        '</div>' + talaanIdButton + '</div>';
     }).join('');
 
     html += '</div>';
@@ -5931,6 +5959,31 @@ async function searchStudentFromHeader_() {
   }
 }
 
+
+function openSearchStudentIdPreview_(student) {
+  if (currentRole !== 'Secretary' || !student || !student.studentId) return;
+
+  const existing = document.getElementById('talaanSearchStudentIdModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.className = 'talaan-id-modal';
+  modal.id = 'talaanSearchStudentIdModal';
+  modal.onclick = function(e) {
+    if (e.target === modal) modal.remove();
+  };
+
+  modal.innerHTML = '<div class="talaan-id-modal-card talaan-profile-id-modal-card" onclick="event.stopPropagation()">' +
+    '<div class="talaan-id-modal-head"><div class="talaan-id-modal-title">TALAAN Student ID</div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanSearchStudentIdModal\')?.remove()">×</button></div>' +
+    '<div class="talaan-id-card-preview" id="searchStudentIdPreviewCard"></div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  renderStudentIdCard_(student, 'searchStudentIdPreviewCard').catch(function(error) {
+    const target = document.getElementById('searchStudentIdPreviewCard');
+    if (target) target.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message || String(error)) + '</div>';
+  });
+}
 
 async function openStudentRecordFromAttendance_(name, section, yearLevel) {
   await openStudentRecord_({name:name, section:section, yearLevel:yearLevel});
@@ -6136,8 +6189,7 @@ async function saveSettingRow(row) {
     const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||'',type:document.getElementById('type_'+row)?.value.trim()||'Physical'});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
     alert('✅ Event updated successfully.');
-    await refreshDashboardData();
-    showSettings();
+    await refreshCurrentPageAfterMutation_();
   } catch(error) { alert('❌ Unable to save event.\n\n' + error.message); }
 }
 
@@ -6148,8 +6200,7 @@ async function deleteEventRow_(row) {
     const result = await apiRequest('deleteEvent',{row:row});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to delete event.');
     alert('🗑 Event deleted successfully.');
-    await refreshDashboardData();
-    showSettings();
+    await refreshCurrentPageAfterMutation_();
   } catch(error) { alert('❌ Unable to delete event.\n\n' + error.message); }
 }
 
@@ -6166,7 +6217,7 @@ async function addEvent() {
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
     alert('✅ New event added successfully.');
     document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
-    closeAddEvent();await refreshDashboardData();showSettings();
+    closeAddEvent();await refreshCurrentPageAfterMutation_();
   } catch(error){alert('❌ Unable to add event.\n\n'+error.message);}
 }
 
