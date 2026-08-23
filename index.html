@@ -646,7 +646,7 @@ th {
 .setting-grid {
   display: grid;
   grid-template-columns:
-    repeat(5,1fr);
+    repeat(4,1fr);
   gap: 10px;
 }
 
@@ -1238,41 +1238,6 @@ th {
 
 </head>
 
-<script>
-/* =====================================================
-   EARLY SESSION RESTORE GUARD
-   Prevents the welcome/app UI from flashing before the
-   saved session is restored on refresh.
-===================================================== */
-(function(){
-  try {
-    const raw = localStorage.getItem('talaanSession');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.token && parsed.session &&
-          (!parsed.session.expiresAt || Number(parsed.session.expiresAt) > Date.now())) {
-        document.documentElement.classList.add('talaan-session-restore');
-        window.__talaanSessionRestorePending = true;
-      }
-    }
-  } catch(e) {}
-})();
-</script>
-
-<style>
-/* On refresh with a valid session, the loading screen is the ONLY thing visible
-   until the session/dashboard restoration finishes. */
-html.talaan-session-restore #welcomeScreen,
-html.talaan-session-restore #loginScreen,
-html.talaan-session-restore #appScreen {
-  display:none !important;
-}
-html.talaan-session-restore #talaanLoadingScreen {
-  display:flex !important;
-  opacity:1 !important;
-  visibility:visible !important;
-}
-</style>
 
 <body>
 
@@ -1344,7 +1309,6 @@ html.talaan-session-restore #talaanLoadingScreen {
 <script>
 (function(){
   function hideTalaanLoading(){
-    if (window.__talaanSessionRestorePending) return;
     var screen=document.getElementById('talaanLoadingScreen');
     if(screen) screen.classList.add('hide');
   }
@@ -1582,7 +1546,7 @@ html.talaan-session-restore #talaanLoadingScreen {
 
         <div class="talaan-top-search" id="talaanTopSearch">
           <input id="talaanHeaderSearchInput" type="search" placeholder="Search student by name, surname, or keyword..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();searchStudentFromHeader_();}">
-          <button type="button" onclick="searchStudentFromHeader_()">SEARCH</button>
+          <button type="button" aria-label="Search" onclick="handleHeaderSearchButton_()">SEARCH</button>
         </div>
       </div>
 
@@ -1650,30 +1614,6 @@ html.talaan-session-restore #talaanLoadingScreen {
         id="newCutoff"
         placeholder="e.g. 7:30 AM"
       >
-
-    </div>
-
-    <div class="form-row">
-
-      <label>
-        Event Type
-      </label>
-
-      <select id="newType">
-
-        <option value="Physical">
-          Physical
-        </option>
-
-        <option value="Online">
-          Online
-        </option>
-
-        <option value="Hybrid">
-          Hybrid
-        </option>
-
-      </select>
 
     </div>
 
@@ -2288,8 +2228,6 @@ function showDashboardSheet() {
 
         <div class="event-pill">
           ${escapeHtml(selectedEvent.event || 'Event')}
-          ${selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : ''}
-          ${selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : ''}
         </div>
 
       </div>
@@ -3204,13 +3142,6 @@ async function saveSettingRow(
               )
               .value
               .trim(),
-
-          type:
-            document
-              .getElementById(
-                'type_' + row
-              )
-              .value,
 
           status:
             document
@@ -4138,20 +4069,6 @@ function displayResult(
 
   if (
     data.decision ===
-    'CLOSED'
-  ) {
-    result.className = 'result error';
-    result.innerHTML = `
-      <div class="student-name">🔒 ATTENDANCE CLOSED</div>
-      <div class="detail"><strong>Event:</strong> ${escapeHtml(data.event || 'Attendance Event')}</div>
-      <div class="detail"><strong>Cut-off:</strong> ${escapeHtml(data.cutoff || 'Reached')}</div>
-      <div class="detail">Attendance can no longer be recorded for this event.</div>
-    `;
-    return;
-  }
-
-  if (
-    data.decision ===
     'NOT_YET_HELD'
   ) {
 
@@ -4616,6 +4533,7 @@ function escapeAttribute(
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
 /* =====================================================
@@ -4801,20 +4719,23 @@ function renderTalaanMenu_(activeId) {
   html += '<button class="close-menu" onclick="closeTalaanMenu_()">×</button>';
   html += '<img class="talaan-menu-logo" src="' + TALAAN_LOGO_DATA + '" alt="TALAAN">';
   html += '<div class="talaan-menu-user">' + escapeHtml(name) + '</div>';
-  html += '<div class="talaan-menu-role">' + escapeHtml(role + year) + '</div>';
+  html += '<div class="talaan-menu-role">' + escapeHtml(session.position || role) + ' • ' + escapeHtml(session.accountRole || role) + (session.yearLevel && session.yearLevel !== 'ALL' ? ' • Year ' + escapeHtml(session.yearLevel) : '') + (session.course && session.course !== 'ALL' ? ' • Course ' + escapeHtml(session.course) : '') + '</div>';
   html += '</div>';
 
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
-  html += '<div class="talaan-menu-group">Attendance</div>';
-  if (role === 'Student' || role === 'Teacher') {
-    const lvl = session.yearLevel;
-    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
-  } else {
-    ['1','2','3','4'].forEach(function(level) {
-      html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
-    });
+  const isClassSec = normalizeClient_(session.accountRole || '') === 'class sec';
+  if (!isClassSec) {
+    html += '<div class="talaan-menu-group">Attendance</div>';
+    if (role === 'Student' || role === 'Teacher') {
+      const lvl = session.yearLevel;
+      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
+    } else {
+      ['1','2','3','4'].forEach(function(level) {
+        html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
+      });
+    }
   }
 
   if (role === 'Student') {
@@ -4828,13 +4749,23 @@ function renderTalaanMenu_(activeId) {
   }
 
   if (role === 'Secretary') {
-    html += '<div class="talaan-menu-group">Secretary</div>';
-    html += menuButton_('⚙️ Event Settings', "talaanNavigate_('settings')", 'menuSettings', activeId === 'settings');
-    html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
-    html += menuButton_('📷 QR Scanner', "talaanNavigate_('scanner')", 'menuScanner', activeId === 'scanner');
+    if (isClassSec) {
+      html += '<div class="talaan-menu-group">Class Secretary</div>';
+      html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
+    } else {
+      html += '<div class="talaan-menu-group">Secretary</div>';
+      html += menuButton_('⚙️ Event Settings', "talaanNavigate_('settings')", 'menuSettings', activeId === 'settings');
+      html += menuButton_('🪪 Student TALAAN IDs', "talaanNavigate_('studentdirectory')", 'menuStudentDirectory', activeId === 'studentdirectory');
+      html += menuButton_('📷 QR Scanner', "talaanNavigate_('scanner')", 'menuScanner', activeId === 'scanner');
+    }
   }
 
-  html += '<div class="talaan-menu-group">Account</div>';
+  if (role === 'Secretary') {
+    html += '<div class="talaan-menu-group">Account</div>';
+    html += menuButton_('🔐 Change Password', "showSecretaryPasswordSettings_()", 'menuPassword', activeId === 'password');
+  } else {
+    html += '<div class="talaan-menu-group">Account</div>';
+  }
   html += '<button class="danger" onclick="talaanLogout_()">↪ Logout</button>';
   menu.innerHTML = html;
 
@@ -4842,6 +4773,8 @@ function renderTalaanMenu_(activeId) {
   hamburger.classList.remove('hidden');
   hamburger.classList.toggle('menu-open', menu.classList.contains('open'));
 }
+
+function normalizeClient_(value) { return String(value == null ? '' : value).trim().toLowerCase(); }
 
 function getYearLabelClient_(level) {
   const map = {'1':'1ST YEAR','2':'2ND YEAR','3':'3RD YEAR','4':'4TH YEAR'};
@@ -4915,8 +4848,11 @@ function switchAuthRole_(role) {
 
   if (role === 'Secretary') {
     body.innerHTML = '<label style="font-size:12px;font-weight:800;color:#718096">SECRETARY ACCESS CODE</label>' +
-      '<div class="talaan-input-wrap"><input id="talaanSecretCode" type="password" autocomplete="off" placeholder="Enter Secretary access code"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretCode\',this)">👁</button></div>';
+      '<div class="talaan-input-wrap"><input id="talaanSecretCode" type="password" autocomplete="username" placeholder="Enter Secretary access code"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretCode\',this)">👁</button></div>' +
+      '<label style="font-size:12px;font-weight:800;color:#718096;margin-top:10px;display:block">PASSWORD <span style="font-weight:600;color:#9aa3af">(if set)</span></label>' +
+      '<div class="talaan-input-wrap"><input id="talaanSecretaryPassword" type="password" autocomplete="current-password" placeholder="Secretary password"><button class="talaan-eye" onclick="togglePasswordField_(\'talaanSecretaryPassword\',this)">👁</button></div>';
     attachEnter_(document.getElementById('talaanSecretCode'));
+    attachEnter_(document.getElementById('talaanSecretaryPassword'));
     setTimeout(function(){ document.getElementById('talaanSecretCode')?.focus(); },50);
     return;
   }
@@ -5019,11 +4955,8 @@ function showTalaanTransition_(session, options){
 
   const s = session || {};
   const name = s.name || (s.role === 'Secretary' ? 'Secretary' : s.role === 'Teacher' ? 'Teacher' : 'User');
-  const section = s.section || s.classSection || s.adviserSection || s.course || s.yearLevel || '';
-  const displayLine = s.role === 'Secretary'
-    ? (s.position || 'Secretary')
-    : section;
-  const role = s.role || currentRole || 'User';
+  const section = s.position || s.section || s.classSection || s.adviserSection || s.course || s.yearLevel || '';
+  const role = s.accountRole || s.role || currentRole || 'User';
 
   const kicker = document.getElementById('talaanTransitionKicker');
   const title = document.getElementById('talaanTransitionTitle');
@@ -5035,7 +4968,7 @@ function showTalaanTransition_(session, options){
   kicker.textContent = options.accountCreated ? 'SSG TALAAN' : 'TALAAN';
   title.textContent = options.accountCreated ? 'Your Account is Now Created!' : 'Welcome,';
   nameEl.textContent = options.accountCreated ? name : name;
-  sectionEl.textContent = options.accountCreated ? 'You can now access your TALAAN account.' : displayLine;
+  sectionEl.textContent = options.accountCreated ? 'You can now access your TALAAN account.' : section;
   roleEl.textContent = role;
 
   overlay.classList.remove('hidden');
@@ -5062,7 +4995,8 @@ async function submitTalaanAuth_() {
     if (authRole === 'Secretary') {
       const code = document.getElementById('talaanSecretCode')?.value.trim() || '';
       if (!code) throw new Error('Please enter your Secretary access code.');
-      data = await apiRequest('login', {role:'secretary', code:code});
+      const password = document.getElementById('talaanSecretaryPassword')?.value || '';
+      data = await apiRequest('login', {role:'secretary', code:code, password:password});
     } else if (authRole === 'Student') {
       const studentId = document.getElementById('talaanStudentId')?.value.trim() || '';
       const password = document.getElementById('talaanStudentPassword')?.value || '';
@@ -5088,8 +5022,7 @@ async function submitTalaanAuth_() {
     const wasAccountCreated = (authRole === 'Student' && studentAuthMode === 'create');
     closeAuthModal_();
     await openDashboard(currentRole, data.session, {
-      accountCreated: wasAccountCreated,
-      showWelcome: true
+      accountCreated: wasAccountCreated
     });
   } catch (error) {
     hideTalaanLoading_();
@@ -5158,7 +5091,7 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   showTalaanLoading_();
 
   const badge = document.getElementById('roleBadge');
-  if (badge) badge.textContent = role;
+  if (badge) { const ss = currentSession_(); badge.textContent = ss.accountRole || role; }
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
@@ -5166,21 +5099,17 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   try {
     await loadDashboard('__NO_DATE__');
 
-    // A welcome display is ONLY part of a fresh login/account-creation flow.
-    // A normal page refresh must never replay it.
-    if (transitionOptions.showWelcome === true) {
-      hideTalaanLoading_();
-      await new Promise(function(resolve){ setTimeout(resolve, 80); });
-      await showTalaanTransition_(currentSession_(), {
-        accountCreated: !!transitionOptions.accountCreated
-      });
-    }
+    // Loading screen remains in front until the welcome display is ready.
+    hideTalaanLoading_();
+    await new Promise(function(resolve){ setTimeout(resolve, 120); });
+
+    // Every successful login gets the welcome display before the site.
+    await showTalaanTransition_(currentSession_(), {
+      accountCreated: !!transitionOptions.accountCreated
+    });
 
     // Only NOW reveal the actual TALAAN application.
     document.getElementById('appScreen')?.classList.remove('hidden');
-    hideTalaanLoading_();
-    document.documentElement.classList.remove('talaan-session-restore');
-    window.__talaanSessionRestorePending = false;
   } catch (error) {
     hideTalaanLoading_();
     throw error;
@@ -5236,7 +5165,7 @@ function showDashboardSheet() {
     '<p>SSG TALAAN • Event Attendance Dashboard</p>' +
     '<div class="dashboard-controls">' +
       '<div class="control"><label>📅 Event Date</label><select id="dashboardDate" onchange="changeDashboardDate(this.value)">' + options + '</select></div>' +
-      '<div class="event-pill">' + escapeHtml(selectedEvent.event || 'Attendance Record') + (selectedEvent.type ? ' • ' + escapeHtml(selectedEvent.type) : '') + (selectedEvent.status ? ' • ' + escapeHtml(selectedEvent.status) : '') + '</div>' +
+      '<div class="event-pill">' + escapeHtml(selectedEvent.event || 'Attendance Record') + '</div>' +
     '</div>' +
   '</div>';
 
@@ -5254,6 +5183,19 @@ function showDashboardSheet() {
   html += '<div class="dashboard-section"><h3 class="dashboard-section-title">📊 Overall Attendance by Year Level</h3><div class="year-grid">';
   years.forEach(function(year){ html += renderYearCard(year); });
   html += '</div></div>';
+
+  const upcoming = dashboardData?.upcomingEvents || [];
+  html += '<div class="dashboard-section talaan-upcoming-card"><h3 class="dashboard-section-title">📅 Upcoming Activities</h3>';
+  if (!upcoming.length) {
+    html += '<div class="status">No events to display.</div>';
+  } else {
+    html += '<div class="talaan-upcoming-list">';
+    upcoming.forEach(function(ev){
+      html += '<div class="talaan-upcoming-item"><div class="talaan-upcoming-name">' + escapeHtml(ev.eventName) + '</div><div class="talaan-upcoming-meta"><span>📅 ' + escapeHtml(ev.date || '—') + '</span><span>⏰ ' + escapeHtml(ev.time || '—') + '</span><span>👥 ' + escapeHtml(ev.who || '—') + '</span><span>📍 ' + escapeHtml(ev.where || '—') + '</span><span>🏛️ ' + escapeHtml(ev.organizedBy || '—') + '</span></div></div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
 
   html += '<div class="talaan-summary-banner"><h3 class="dashboard-section-title" style="margin-bottom:12px">📈 Attendance Summary</h3><div class="talaan-summary-grid">' +
     '<div class="talaan-summary-item"><strong>' + Number(d.attendanceRate||0).toFixed(2) + '%</strong><span>Overall attendance rate</span></div>' +
@@ -5329,6 +5271,7 @@ function getStudentCourseClient_(student) {
   if (section === 'ENTREP' || section === 'ENTREPRENEURSHIP') return 'Entrepreneurship';
   if (/^[1-4]A$/.test(section)) return 'Broadcasting';
   if (/^[1-4]B$/.test(section)) return 'Communication';
+  if (/^[1-4]C$/.test(section)) return 'BACM';
   if (section.indexOf('BROADCAST') !== -1) return 'Broadcasting';
   if (section.indexOf('COMM') !== -1) return 'Communication';
   return section || 'Other';
@@ -5538,13 +5481,21 @@ async function buildStudentIdPng_(student) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#718096';
   ctx.font = '700 30px Arial, sans-serif';
-  ctx.fillText('My TALAAN ID', width/2, 275);
+  ctx.fillText('My TALAAN ID', width/2, 245);
 
   ctx.fillStyle = '#17266b';
-  ctx.font = '900 55px Arial, sans-serif';
-  ctx.fillText(String(student.studentId), width/2, 350);
+  ctx.font = '900 46px Arial, sans-serif';
+  const studentCode = String(student.studentId);
+  const codeMaxWidth = 720;
+  let codeFont = 46;
+  while (codeFont > 30) {
+    ctx.font = '900 ' + codeFont + 'px Arial, sans-serif';
+    if (ctx.measureText(studentCode).width <= codeMaxWidth) break;
+    codeFont -= 2;
+  }
+  ctx.fillText(studentCode, width/2, 320);
 
-  const qrData = await getQrDataUrl_(student.studentId, 500);
+  const qrData = await getQrDataUrl_(student.studentId, 430);
   const qrImg = await new Promise(function(resolve,reject) {
     const img = new Image();
     img.onload = function(){ resolve(img); };
@@ -5552,9 +5503,9 @@ async function buildStudentIdPng_(student) {
     img.src = qrData;
   });
 
-  const qrSize = 500;
+  const qrSize = 430;
   const qrX = (width-qrSize)/2;
-  const qrY = 365;
+  const qrY = 360;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(qrX-18,qrY-18,qrSize+36,qrSize+36);
   ctx.drawImage(qrImg,qrX,qrY,qrSize,qrSize);
@@ -5569,26 +5520,26 @@ async function buildStudentIdPng_(student) {
     if (ctx.measureText(name).width <= maxNameWidth) break;
     nameFont -= 2;
   }
-  ctx.fillText(name, width/2, 915);
+  ctx.fillText(name, width/2, 845);
 
   ctx.fillStyle = '#53627a';
   ctx.font = '800 31px Arial, sans-serif';
-  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 960);
+  ctx.fillText(String(student.section || '').toUpperCase(), width/2, 890);
 
   ctx.fillStyle = '#718096';
   ctx.font = '700 20px Arial, sans-serif';
-  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 995);
+  ctx.fillText(getYearLabelClient_(student.yearLevel), width/2, 930);
 
   ctx.strokeStyle = '#d7dee9';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(155,1030);
-  ctx.lineTo(745,1030);
+  ctx.moveTo(155,970);
+  ctx.lineTo(745,970);
   ctx.stroke();
 
   ctx.fillStyle = '#718096';
   ctx.font = '600 18px Arial, sans-serif';
-  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1075);
+  ctx.fillText('SSG TALAAN • Official Student Identification', width/2, 1015);
 
   return canvas.toDataURL('image/png');
 }
@@ -5744,6 +5695,7 @@ async function showStudentDirectory_() {
     const grouped = groupStudentDirectory_(students);
     let html = '<div class="attendance-card">' +
       '<h2 class="section-heading">🪪 Student TALAAN IDs</h2>' +
+      '<div class="talaan-code-list-card"><div><strong>Student Name + TALAAN Code</strong><div class="section-description" style="margin:4px 0 10px">Copy-paste list for student distribution. The full ID/QR remains available below.</div></div><button class="talaan-id-action secondary" onclick="copyStudentCodes_()">📋 COPY ALL</button><textarea id="talaanCodeList" readonly style="width:100%;min-height:130px;border:1px solid #dce3ee;border-radius:12px;padding:10px;font-family:inherit;font-size:12px;resize:vertical"></textarea></div>' +
       '<p class="section-description">Browse by year level, course, and section. View or download an individual PNG, or download a ZIP containing the collated IDs for a section, course, or whole year.</p>' +
       '<div class="talaan-id-toolbar"><div class="left"><div class="title">Official TALAAN Student IDs</div><div class="hint">QR value = the student\'s TALAAN ID. This is the same ID shown in the student profile.</div></div><div class="talaan-id-actions"><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=true;});">Expand All</button><button class="talaan-id-action secondary" onclick="document.querySelectorAll(\'.talaan-id-year\').forEach(function(x){x.open=false;});">Collapse All</button></div></div>';
 
@@ -5801,6 +5753,8 @@ async function showStudentDirectory_() {
 
     html += '<div id="talaanIdProgress" class="status" style="min-height:18px"></div></div>';
     setPage_(html);
+    const codeBox = document.getElementById('talaanCodeList');
+    if (codeBox) codeBox.value = students.map(function(st){ return (st.name || '') + ' — ' + (st.studentId || 'NO TALAAN ID'); }).join('\n');
 
     // Store convenient grouped references after rendering.
     Object.keys(grouped).forEach(function(year) {
@@ -5817,6 +5771,25 @@ async function showStudentDirectory_() {
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
   }
+}
+
+async function copyStudentCodes_() {
+  const box = document.getElementById('talaanCodeList');
+  if (!box) return;
+  try { await navigator.clipboard.writeText(box.value); alert('✅ Student names and TALAAN codes copied.'); } catch(e) { box.focus(); box.select(); document.execCommand('copy'); alert('✅ Student names and TALAAN codes copied.'); }
+}
+
+async function showSecretaryPasswordSettings_() {
+  if (currentRole !== 'Secretary') return;
+  renderTalaanMenu_('password');
+  setPage_('<div class="attendance-card"><h2 class="section-heading">🔐 Change Secretary Password</h2><p class="section-description">Set or change the password used with this Secretary access code.</p><div class="setting-grid"><div class="setting-field"><label>CURRENT PASSWORD</label><input id="secCurrentPassword" type="password" placeholder="Leave blank if none is set"></div><div class="setting-field"><label>NEW PASSWORD</label><input id="secNewPassword" type="password" placeholder="At least 6 characters"></div></div><div class="modal-actions"><button class="save-button" onclick="saveSecretaryPassword_()">💾 SAVE PASSWORD</button></div></div>');
+}
+
+async function saveSecretaryPassword_() {
+  const currentPassword = document.getElementById('secCurrentPassword')?.value || '';
+  const newPassword = document.getElementById('secNewPassword')?.value || '';
+  if (newPassword.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  try { const result = await apiRequest('changeSecretaryPassword',{currentPassword:currentPassword,newPassword:newPassword}); if (!result || result.success !== true) throw new Error(result?.error || 'Unable to change password.'); alert('✅ Secretary password updated successfully.'); document.getElementById('secCurrentPassword').value=''; document.getElementById('secNewPassword').value=''; } catch(e) { alert('❌ Unable to change password.\n\n' + e.message); }
 }
 
 async function showWarnings_() {
@@ -5859,6 +5832,10 @@ async function searchStudent_() {
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
 }
+
+function handleHeaderSearchButton_() { if (window.innerWidth <= 700) { toggleHeaderSearch_(); } else { searchStudentFromHeader_(); } }
+
+function toggleHeaderSearch_() { const box=document.getElementById('talaanTopSearch'); const input=document.getElementById('talaanHeaderSearchInput'); if(!box) return; box.classList.toggle('search-open'); if(box.classList.contains('search-open')) input?.focus(); else if(input) input.value=''; }
 
 async function searchStudentFromHeader_() {
   const input = document.getElementById('talaanHeaderSearchInput');
@@ -6009,24 +5986,17 @@ async function downloadMyProfileId_() {
 }
 
 function showSettings() {
-  if (currentRole !== 'Secretary') return;
+  if (currentRole !== 'Secretary' || normalizeClient_(currentSession_().accountRole) === 'class sec') return;
   renderTalaanMenu_('settings');
   const data = dashboardData?.settings || [];
-  if (!data.length) {
-    setPage_('<div class="attendance-card"><h2 class="section-heading">⚙️ Event Settings</h2><p>No settings found.</p></div>');
-    return;
-  }
+  if (!data.length) { setPage_('<div class="attendance-card"><h2 class="section-heading">⚙️ Event Settings</h2><p>No settings found.</p></div>'); return; }
 
   const headers = data[0];
   const eventIndex = findHeader(headers,['EVENT','EVENT TITLE']);
   const dateIndex = findHeader(headers,['DATE','EVENT DATE']);
   const cutoffIndex = findHeader(headers,['CUT-OFF','CUTOFF','CUT OFF']);
   const statusIndex = findHeader(headers,['STATUS']);
-  const typeIndex = findHeader(headers,['TYPE','EVENT TYPE']);
-
-  let html = '<div><h2 class="section-heading">⚙️ Event Settings</h2>' +
-    '<p class="section-description">Manage existing events, add new events, or remove an event. The cut-off automatically changes the event status to <strong>Closed</strong> when reached.</p>' +
-    '<div class="settings-toolbar"><button class="add-button" onclick="openAddEvent()">＋ ADD EVENT</button></div><div class="settings-list">';
+  let html = '<div><h2 class="section-heading">⚙️ Event Settings</h2><p class="section-description">Manage existing events, add new events, or remove an event.</p><div class="settings-toolbar"><button class="add-button" onclick="openAddEvent()">＋ ADD EVENT</button></div><div class="settings-list">';
 
   for (let r=1;r<data.length;r++) {
     const row=r+1;
@@ -6034,25 +6004,11 @@ function showSettings() {
     const date=dateIndex>=0?data[r][dateIndex]:'';
     const cutoff=cutoffIndex>=0?data[r][cutoffIndex]:'';
     const status=statusIndex>=0?data[r][statusIndex]:'';
-    const type=typeIndex>=0?data[r][typeIndex]:'';
-
-    const normalizedStatus = String(status || '').toLowerCase();
-    const statusBadge = normalizedStatus === 'closed' ? '🔒 CLOSED' : (status || '—');
-
     html += '<div class="setting-card"><div class="setting-top"><div class="setting-title">' + escapeHtml(event||'Untitled Event') + '</div><div class="row-badge">ROW ' + row + '</div></div><div class="setting-grid">' +
       '<div class="setting-field"><label>EVENT</label><input id="event_' + row + '" value="' + escapeAttribute(event) + '"></div>' +
       '<div class="setting-field"><label>DATE</label><input id="date_' + row + '" value="' + escapeAttribute(date) + '"></div>' +
-      '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '" placeholder="7:30 AM"></div>' +
-      '<div class="setting-field"><label>EVENT TYPE</label><select id="type_' + row + '">' +
-        '<option value="Physical" ' + (String(type).toLowerCase()==='physical'?'selected':'') + '>Physical</option>' +
-        '<option value="Online" ' + (String(type).toLowerCase()==='online'?'selected':'') + '>Online</option>' +
-        '<option value="Hybrid" ' + (String(type).toLowerCase()==='hybrid'?'selected':'') + '>Hybrid</option>' +
-      '</select></div>' +
-      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '">' +
-        '<option value="Active" ' + (normalizedStatus==='active'?'selected':'') + '>Active</option>' +
-        '<option value="Scheduled" ' + (normalizedStatus==='scheduled'?'selected':'') + '>Scheduled</option>' +
-        '<option value="Closed" ' + (normalizedStatus==='closed'?'selected':'') + '>Closed</option>' +
-      '</select><div style="font-size:10px;color:#718096;margin-top:4px">' + escapeHtml(statusBadge) + '</div></div>' +
+      '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '"></div>' +
+      '<div class="setting-field"><label>STATUS</label><input id="status_' + row + '" value="' + escapeAttribute(status) + '"></div>' +
       '</div><div class="modal-actions"><button class="save-button" onclick="saveSettingRow(' + row + ')">💾 SAVE EVENT</button><button class="save-button" style="background:#a82222" onclick="deleteEventRow_(' + row + ')">🗑 DELETE</button></div></div>';
   }
   html += '</div></div>';
@@ -6062,14 +6018,7 @@ function showSettings() {
 async function saveSettingRow(row) {
   if (currentRole !== 'Secretary') return;
   try {
-    const result = await apiRequest('updateSettings', {
-      row: row,
-      event: document.getElementById('event_'+row)?.value.trim() || '',
-      date: document.getElementById('date_'+row)?.value.trim() || '',
-      cutoff: document.getElementById('cutoff_'+row)?.value.trim() || '',
-      type: document.getElementById('type_'+row)?.value || 'Physical',
-      status: document.getElementById('status_'+row)?.value || 'Active'
-    });
+    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||''});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
     alert('✅ Event updated successfully.');
     await refreshDashboardData();
@@ -6094,18 +6043,13 @@ async function addEvent() {
   const event=document.getElementById('newEvent')?.value.trim()||'';
   const date=document.getElementById('newDate')?.value.trim()||'';
   const cutoff=document.getElementById('newCutoff')?.value.trim()||'';
-  const type=document.getElementById('newType')?.value||'Physical';
-  const status=document.getElementById('newStatus')?.value||'Scheduled';
+  const status=document.getElementById('newStatus')?.value.trim()||'';
   if (!event || !date) { alert('Please provide the event title and date.'); return; }
   try {
-    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,type:type,status:status});
+    const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
     alert('✅ New event added successfully.');
-    document.getElementById('newEvent').value='';
-    document.getElementById('newDate').value='';
-    document.getElementById('newCutoff').value='';
-    document.getElementById('newType').value='Physical';
-    document.getElementById('newStatus').value='Scheduled';
+    document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
     closeAddEvent();await refreshDashboardData();showSettings();
   } catch(error){alert('❌ Unable to add event.\n\n'+error.message);}
 }
@@ -6116,7 +6060,7 @@ async function refreshDashboardData() {
 }
 
 function openScanner() {
-  if (currentRole !== 'Secretary') return;
+  if (currentRole !== 'Secretary' || normalizeClient_(currentSession_().accountRole) === 'class sec') return;
   renderTalaanMenu_('scanner');
   closeTalaanMenu_();
   // Reuse the existing scanner implementation/UI.
@@ -6128,32 +6072,13 @@ function openScanner() {
 
 async function onScanSuccess(decodedText) {
   if (processing || !scanner || !scanning) return;
-  processing = true;
-  const loading = document.getElementById('scanLoading');
-
-  if (loading) loading.textContent = '⏳ QR detected. Recording attendance...';
-
-  // Pause immediately so the same QR cannot fire repeatedly while the
-  // Apps Script request is being processed.
-  try { if (scanner) scanner.pause(true); } catch (e) {}
-
-  try {
-    const data = await apiRequest('record', {qrText: decodedText});
-    displayResult(data);
-  } catch (error) {
-    showScanError(error.message);
-  }
-
-  // Resume immediately after the backend response; no artificial delay.
-  processing = false;
-  if (scanner && scanning) {
-    try {
-      scanner.resume();
-      if (loading) loading.textContent = '📷 CAMERA ACTIVE — Ready for next QR code.';
-    } catch (e) {
-      await restartScannerAutomatically();
-    }
-  }
+  processing=true;
+  const loading=document.getElementById('scanLoading');
+  const result=document.getElementById('scanResult');
+  if(loading)loading.textContent='⏳ QR detected. Processing attendance...';
+  try{if(scanner)scanner.pause(true);}catch(e){}
+  try{const data=await apiRequest('record',{qrText:decodedText});displayResult(data);}catch(error){showScanError(error.message);}
+  setTimeout(async function(){processing=false;if(scanner&&scanning){try{scanner.resume();if(loading)loading.textContent='📷 CAMERA ACTIVE — Ready for next QR code.';}catch(e){await restartScannerAutomatically();}}},250);
 }
 
 function renderHeaderLogo_() {
@@ -6196,7 +6121,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
-    openDashboard(currentRole, stored.session, {showWelcome: false});
+    openDashboard(currentRole, stored.session);
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
@@ -6293,6 +6218,38 @@ window.addEventListener('DOMContentLoaded', function(){
 @media(max-width:600px){
   .talaan-transition-overlay{padding:18px}
   .talaan-transition-section{font-size:14px}
+}
+
+/* FINAL RESPONSIVE / MOBILE TUNING */
+.year-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
+.talaan-upcoming-card{margin-top:18px;background:#fff;border-radius:18px;padding:18px;box-shadow:0 5px 20px rgba(20,43,75,.07)}
+.talaan-upcoming-list{display:grid;gap:10px}
+.talaan-upcoming-item{border:1px solid #e2e8f0;border-radius:14px;padding:13px;background:#f8fafc}
+.talaan-upcoming-name{font-weight:900;color:#17266b;font-size:15px}
+.talaan-upcoming-meta{display:flex;flex-wrap:wrap;gap:7px 14px;margin-top:7px;font-size:11px;color:#718096}
+.talaan-code-list-card{margin:14px 0;padding:14px;border:1px solid #dce3ee;border-radius:15px;background:#f8fafc}
+@media(max-width:700px){
+  .topbar{flex-direction:row!important;align-items:center!important;flex-wrap:nowrap!important;padding:10px 12px 10px 58px!important;gap:8px!important;min-height:66px}
+  .talaan-top-left{padding-left:0!important;max-width:none!important;flex:1;min-width:0}
+  .talaan-header-logo{display:block!important;width:44px!important;height:36px!important;margin:0!important;object-fit:contain}
+  .talaan-top-left>div{display:none!important}
+  .top-title{display:none!important}
+  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:5px!important;flex:0 0 auto}
+  .role-badge{font-size:10px!important;padding:5px 9px!important;white-space:nowrap}
+  .talaan-top-search{width:auto!important;max-width:none!important}
+  .talaan-top-search input{display:none!important;width:0!important}
+  .talaan-top-search button{width:38px!important;height:38px!important;padding:0!important;font-size:0!important;border-radius:10px!important}
+  .talaan-top-search button::before{content:'🔍';font-size:17px}
+  .talaan-top-search.search-open input{display:block!important;width:min(58vw,260px)!important;height:38px!important}
+  .talaan-top-search.search-open button{font-size:0!important}
+  .talaan-upcoming-meta{display:grid;grid-template-columns:1fr 1fr}
+  .talaan-code-list-card{padding:12px}
+}
+@media(max-width:420px){
+  .talaan-hamburger{left:10px;top:10px;width:42px;height:42px;font-size:21px}
+  .topbar{padding-left:55px!important}
+  .talaan-header-logo{width:40px!important;height:32px!important}
+  .role-badge{max-width:120px;overflow:hidden;text-overflow:ellipsis}
 }
 </style>
 
