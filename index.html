@@ -5060,7 +5060,14 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
 
   ['navAttendance1','navAttendance2','navAttendance3','navAttendance4'].forEach(function(id){
     const el = document.getElementById(id);
-    if (el) el.style.display = role === 'Class Sec' ? 'none' : '';
+    if (!el) return;
+    if (role !== 'Class Sec') {
+      el.style.display = '';
+      return;
+    }
+    const assignedYear = String(currentSession_().yearLevel || '');
+    const buttonYear = id.replace('navAttendance','');
+    el.style.display = buttonYear === assignedYear ? '' : 'none';
   });
   const oldSecretaryNav = document.getElementById('secretaryNavigation');
   if (oldSecretaryNav) oldSecretaryNav.style.display = role === 'Secretary' ? '' : 'none';
@@ -5269,7 +5276,7 @@ async function talaanNavigate_(page, sheetName) {
 async function showAttendance(sheetName) {
   const session = currentSession_();
   const role = session.role || currentRole;
-  if (role === 'Student' || role === 'Teacher') sheetName = 'Attendance' + session.yearLevel;
+  if (role === 'Student' || role === 'Teacher' || role === 'Class Sec') sheetName = 'Attendance' + session.yearLevel;
   if (!/^Attendance[1-4]$/.test(sheetName)) sheetName = 'Attendance1';
   const level = sheetName.replace('Attendance','');
   renderTalaanMenu_('attendance' + level);
