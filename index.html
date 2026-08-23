@@ -5994,8 +5994,9 @@ window.addEventListener('DOMContentLoaded', function(){
 /* Phone: account/search on LEFT; menu + TALAAN logo on RIGHT. */
 @media(max-width:700px){
   .dashboard-main-grid{grid-template-columns:1fr!important;gap:14px!important}
-  .dashboard-left-column{order:1!important}
-  .dashboard-right-column{order:2!important}
+  /* Phone order: Upcoming Activities FIRST, then Event Attendance Dashboard. */
+  .dashboard-right-column{order:1!important}
+  .dashboard-left-column{order:2!important}
   .dashboard-left-column .event-attendance-section{min-height:0!important;height:auto!important}
   .dashboard-right-column .upcoming-activities-section{height:auto!important}
   .dashboard-right-column .upcoming-activities-box{height:300px!important;min-height:220px!important;max-height:300px!important}
