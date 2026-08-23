@@ -5214,12 +5214,9 @@ function showDashboardSheet() {
     '<div class="dashboard-greeting-meta">' + greetingMeta + '</div>' +
   '</div>';
 
-  html += '<div class="upcoming-activities-section">' +
-    '<h3 class="dashboard-section-title">UPCOMING ACTIVITIES</h3>' +
-    '<div class="upcoming-activities-box">' + upcomingHtml + '</div>' +
-  '</div>';
-
-  html += '<div class="event-attendance-section">' +
+  html += '<div class="dashboard-main-grid">' +
+    '<div class="dashboard-left-column">' +
+      '<div class="event-attendance-section">' +
     '<div class="event-attendance-heading">' +
       '<div><h3>EVENT ATTENDANCE DASHBOARD</h3><div class="event-attendance-sub">ATTENDANCE RECORD' +
         (selectedEvent.event ? ' • ' + escapeHtml(selectedEvent.event) : '') +
@@ -5250,7 +5247,15 @@ function showDashboardSheet() {
     '<div class="talaan-summary-item"><strong>' + escapeHtml(lowest?.label || '—') + (lowest ? ' • ' + Number(lowest.percentage||0).toFixed(2) + '%' : '') + '</strong><span>Lowest attendance rate</span></div>' +
   '</div></div>';
 
-  html += '</div>';
+  html += '</div>' +
+    '</div>' +
+    '<div class="dashboard-right-column">' +
+      '<div class="upcoming-activities-section">' +
+        '<h3 class="dashboard-section-title">UPCOMING ACTIVITIES</h3>' +
+        '<div class="upcoming-activities-box">' + upcomingHtml + '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
   setPage_(html);
 }
 
@@ -6108,6 +6113,23 @@ async function onScanSuccess(decodedText) {
   setTimeout(async function(){processing=false;if(scanner&&scanning){try{scanner.resume();if(loading)loading.textContent='📷 CAMERA ACTIVE — Ready for next QR code.';}catch(e){await restartScannerAutomatically();}}},250);
 }
 
+function toggleHeaderSearch_(){
+  const shell=document.getElementById('talaanTopSearch');
+  const btn=document.getElementById('talaanMobileSearchToggle');
+  if(!shell) return;
+  const open=shell.classList.toggle('open');
+  if(btn){
+    btn.setAttribute('aria-label', open ? 'Close search' : 'Open search');
+    btn.textContent=open ? '×' : '🔍';
+  }
+  if(open){
+    setTimeout(function(){
+      const input=document.getElementById('talaanHeaderSearchInput');
+      if(input) input.focus();
+    },80);
+  }
+}
+
 function renderHeaderLogo_() {
   const topbar=document.querySelector('.topbar');
   if(!topbar || document.getElementById('talaanHeaderLogo')) return;
@@ -6274,6 +6296,42 @@ window.addEventListener('DOMContentLoaded', function(){
 }
 
 .attendance-event-meta{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.attendance-event-meta span{background:#f5f7fb;border:1px solid #e3e8f1;border-radius:10px;padding:7px 10px;font-size:11px;color:#526174}.attendance-event-meta strong{color:#17266b}
+
+/* ===== FINAL RESPONSIVE DASHBOARD + MOBILE HEADER ===== */
+.dashboard-main-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(300px,360px)!important;gap:20px!important;align-items:stretch!important}
+.dashboard-left-column,.dashboard-right-column{min-width:0!important}
+.dashboard-left-column .event-attendance-section{height:100%!important;min-height:620px!important}
+.dashboard-right-column .upcoming-activities-section{height:100%!important;margin:0!important}
+.dashboard-right-column .upcoming-activities-box{height:560px!important;max-height:calc(100vh - 300px)!important;min-height:360px!important;overflow-y:auto!important}
+.talaan-mobile-search-toggle{display:none;border:0;background:#17266b;color:#fff;border-radius:11px;font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex:0 0 auto;transition:transform .2s ease,background .2s ease}
+.talaan-mobile-search-toggle:hover{transform:translateY(-1px)}
+@media(max-width:1100px) and (min-width:701px){
+  .dashboard-main-grid{grid-template-columns:minmax(0,1fr) minmax(270px,32%)!important;gap:16px!important}
+  .dashboard-left-column .event-attendance-section{min-height:580px!important}
+  .dashboard-right-column .upcoming-activities-box{height:520px!important}
+}
+@media(max-width:700px){
+  .dashboard-main-grid{grid-template-columns:1fr!important;gap:14px!important}
+  .dashboard-left-column{order:1!important}
+  .dashboard-right-column{order:2!important}
+  .dashboard-left-column .event-attendance-section{min-height:0!important;height:auto!important}
+  .dashboard-right-column .upcoming-activities-section{height:auto!important}
+  .dashboard-right-column .upcoming-activities-box{height:300px!important;max-height:300px!important;min-height:220px!important}
+  .topbar{display:flex!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:8px 10px 8px 60px!important;min-height:78px!important;position:relative!important}
+  .talaan-top-left{display:flex!important;align-items:center!important;gap:7px!important;padding-left:0!important;max-width:none!important;min-width:0!important;flex:1 1 auto!important}
+  .talaan-top-left>div{display:none!important}
+  .talaan-header-logo{display:block!important;width:auto!important;height:62px!important;max-width:112px!important;margin:0!important;object-fit:contain!important}
+  .talaan-hamburger{position:absolute!important;left:10px!important;top:18px!important;width:42px!important;height:42px!important;font-size:21px!important}
+  .top-account{width:auto!important;min-width:0!important;align-items:flex-end!important;gap:6px!important;flex:0 0 auto!important}
+  .role-badge{height:26px!important;min-height:26px!important;padding:5px 9px!important;font-size:10px!important;white-space:nowrap!important;align-self:auto!important}
+  .talaan-search-shell{width:40px!important;height:40px!important;position:relative!important}
+  .talaan-mobile-search-toggle{display:flex!important;width:40px!important;height:40px!important}
+  .talaan-top-search{position:absolute!important;right:0!important;top:46px!important;width:0!important;max-width:calc(100vw - 20px)!important;overflow:hidden!important;opacity:0!important;pointer-events:none!important;transform:translateX(12px)!important;transition:width .28s ease,opacity .2s ease,transform .28s ease!important;z-index:1200!important}
+  .talaan-top-search.open{width:min(82vw,360px)!important;opacity:1!important;pointer-events:auto!important;transform:translateX(0)!important}
+  .talaan-top-search input{width:calc(100% - 0px)!important;height:42px!important;min-width:0!important;padding:0 13px!important;border:1px solid #d8dfeb!important;border-radius:12px!important;background:#fff!important;box-shadow:0 8px 24px rgba(20,43,75,.12)!important}
+  .talaan-top-search button{display:none!important}
+}
+@media(min-width:701px){.talaan-mobile-search-toggle{display:none!important}.talaan-top-search{position:static!important;width:100%!important;opacity:1!important;transform:none!important;overflow:visible!important;pointer-events:auto!important}}
 </style>
 
 </body>
