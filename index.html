@@ -5600,30 +5600,80 @@ async function downloadStudentIdZip_(students, zipName, progressLabel) {
     return;
   }
 
+  /*
+   * Open the save destination immediately while the button click still
+   * has browser user activation. This prevents Chrome/Edge from blocking
+   * the final ZIP download after the asynchronous ID generation finishes.
+   */
+  let saveHandle = null;
+  if (window.showSaveFilePicker) {
+    try {
+      saveHandle = await window.showSaveFilePicker({
+        suggestedName: zipName + '.zip',
+        types: [{
+          description: 'ZIP archive',
+          accept: {'application/zip': ['.zip']}
+        }]
+      });
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+      saveHandle = null;
+    }
+  }
+
   const zip = new JSZip();
   const sorted = collectStudentsFromSection_(students);
   const original = document.title;
 
   try {
     document.title = 'Generating TALAAN IDs...';
+
     for (let i = 0; i < sorted.length; i++) {
       const student = sorted[i];
       const dataUrl = await buildStudentIdPng_(student);
-      const base64 = dataUrl.split(',')[1];
-      zip.file(getStudentIdSafeFileName_(student), base64, {base64:true});
-      if (progressLabel) progressLabel.textContent = 'Generating ' + (i+1) + ' of ' + sorted.length + ' IDs…';
-      await new Promise(function(resolve){ setTimeout(resolve, 0); });
+      const imageBlob = await fetch(dataUrl).then(function(response) {
+        return response.blob();
+      });
+
+      zip.file(getStudentIdSafeFileName_(student), imageBlob);
+
+      if (progressLabel) {
+        progressLabel.textContent =
+          'Generating ' + (i + 1) + ' of ' + sorted.length + ' IDs…';
+      }
+
+      await new Promise(function(resolve) {
+        setTimeout(resolve, 0);
+      });
     }
 
-    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = zipName + '.zip';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+    /*
+     * PNG files are already compressed. STORE avoids wasting CPU on
+     * DEFLATE and makes large TALAAN ZIPs substantially more reliable.
+     */
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'STORE'
+    });
+
+    if (saveHandle) {
+      const writable = await saveHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = zipName + '.zip';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(function() {
+        URL.revokeObjectURL(url);
+      }, 5000);
+    }
   } catch (error) {
     alert('Unable to create ZIP: ' + (error.message || error));
   } finally {
@@ -5631,12 +5681,35 @@ async function downloadStudentIdZip_(students, zipName, progressLabel) {
     if (progressLabel) progressLabel.textContent = '';
   }
 }
-
 async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
   if (!yearGroup) return;
   if (typeof JSZip === 'undefined') {
     alert('ZIP library is not available. Please refresh the page and try again.');
     return;
+  }
+
+  const safeYearLabel = String(yearLabel || 'Year')
+    .replace(/[^a-z0-9]+/gi, '_');
+
+  /*
+   * Open the save destination immediately while the button click still
+   * has browser user activation. This prevents Chrome/Edge from blocking
+   * the final ZIP download after the asynchronous ID generation finishes.
+   */
+  let saveHandle = null;
+  if (window.showSaveFilePicker) {
+    try {
+      saveHandle = await window.showSaveFilePicker({
+        suggestedName: 'TALAAN_IDs_' + safeYearLabel + '.zip',
+        types: [{
+          description: 'ZIP archive',
+          accept: {'application/zip': ['.zip']}
+        }]
+      });
+    } catch (error) {
+      if (error && error.name === 'AbortError') return;
+      saveHandle = null;
+    }
   }
 
   const zip = new JSZip();
@@ -5645,36 +5718,96 @@ async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
 
   try {
     document.title = 'Generating TALAAN IDs...';
-    const courseNames = getSortedCourseNamesClient_(yearGroup.courses);
+
+    const courseNames =
+      getSortedCourseNamesClient_(yearGroup.courses);
+
     for (let ci = 0; ci < courseNames.length; ci++) {
       const courseName = courseNames[ci];
       const course = yearGroup.courses[courseName];
       const courseFolder = zip.folder(courseName);
-      const sections = Object.keys(course.sections).sort(function(a,b){ return a.localeCompare(b,undefined,{numeric:true}); });
+
+      const sections =
+        Object.keys(course.sections).sort(function(a, b) {
+          return a.localeCompare(
+            b,
+            undefined,
+            {numeric: true}
+          );
+        });
 
       for (let si = 0; si < sections.length; si++) {
         const section = sections[si];
-        const sectionFolder = courseFolder.folder('Section_' + section.replace(/[^a-z0-9_-]+/gi,'_'));
-        const students = collectStudentsFromSection_(course.sections[section]);
+
+        const sectionFolder =
+          courseFolder.folder(
+            'Section_' +
+            section.replace(/[^a-z0-9_-]+/gi, '_')
+          );
+
+        const students =
+          collectStudentsFromSection_(
+            course.sections[section]
+          );
+
         for (let i = 0; i < students.length; i++) {
-          const dataUrl = await buildStudentIdPng_(students[i]);
-          sectionFolder.file(getStudentIdSafeFileName_(students[i]), dataUrl.split(',')[1], {base64:true});
+          const dataUrl =
+            await buildStudentIdPng_(students[i]);
+
+          const imageBlob =
+            await fetch(dataUrl).then(function(response) {
+              return response.blob();
+            });
+
+          sectionFolder.file(
+            getStudentIdSafeFileName_(students[i]),
+            imageBlob
+          );
+
           count++;
-          if (progressLabel) progressLabel.textContent = 'Generating ' + count + ' IDs…';
-          await new Promise(function(resolve){ setTimeout(resolve,0); });
+
+          if (progressLabel) {
+            progressLabel.textContent =
+              'Generating ' + count + ' IDs…';
+          }
+
+          await new Promise(function(resolve) {
+            setTimeout(resolve, 0);
+          });
         }
       }
     }
 
-    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'TALAAN_IDs_' + yearLabel.replace(/[^a-z0-9]+/gi,'_') + '.zip';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+    /*
+     * PNG files are already compressed. STORE avoids wasting CPU on
+     * DEFLATE and makes large TALAAN ZIPs substantially more reliable.
+     */
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'STORE'
+    });
+
+    const fileName =
+      'TALAAN_IDs_' + safeYearLabel + '.zip';
+
+    if (saveHandle) {
+      const writable = await saveHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(function() {
+        URL.revokeObjectURL(url);
+      }, 5000);
+    }
   } catch (error) {
     alert('Unable to create year ZIP: ' + (error.message || error));
   } finally {
@@ -5682,6 +5815,7 @@ async function downloadStudentIdYearZip_(yearGroup, yearLabel, progressLabel) {
     if (progressLabel) progressLabel.textContent = '';
   }
 }
+
 
 async function showStudentDirectory_() {
   const session = currentSession_();
