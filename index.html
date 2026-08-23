@@ -1264,6 +1264,27 @@ th {
   }
 }
 
+
+/* Student record UI */
+.talaan-attendance-student-link{background:none;border:0;padding:0;margin:0;color:#17266b;font:inherit;font-weight:900;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;transition:.15s ease}
+.talaan-attendance-student-link:hover{text-decoration-color:#17266b;transform:translateX(1px)}
+.talaan-record-time{font-weight:800;color:#53627a;font-size:13px}
+.talaan-record-type{font-size:12px;color:#718096;font-weight:800}
+.talaan-record-event{display:flex;flex-direction:column;gap:3px;min-width:0}
+.talaan-student-record-modal{position:fixed;inset:0;background:rgba(15,29,62,.42);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
+.talaan-student-record-card{width:min(760px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;padding:24px;box-shadow:0 25px 80px rgba(10,25,60,.25)}
+.talaan-student-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.talaan-student-record-name{font-size:26px;font-weight:950;color:#17266b}
+.talaan-student-record-meta{color:#718096;font-weight:700;margin-top:4px}
+.talaan-student-record-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 18px}
+.talaan-student-record-stat{background:#f6f8fc;border-radius:14px;padding:14px;text-align:center}
+.talaan-student-record-stat .n{font-size:25px;font-weight:950;color:#17266b}
+.talaan-student-record-stat .l{font-size:11px;color:#718096;font-weight:900;text-transform:uppercase}
+.talaan-student-record-list{display:grid;gap:8px}
+.talaan-student-record-row{display:grid;grid-template-columns:105px minmax(0,1fr) 95px;gap:10px;align-items:center;padding:12px 14px;border-radius:12px}
+.talaan-student-record-row.present{background:#e8f7ed;color:#167344}
+.talaan-student-record-row.absent{background:#fdeaea;color:#a82222}
+@media(max-width:700px){.talaan-student-record-stats{grid-template-columns:repeat(2,1fr)}.talaan-student-record-row{grid-template-columns:1fr}.talaan-student-record-card{padding:18px}}
 </style>
 
 </head>
@@ -2706,146 +2727,46 @@ async function showAttendance(
 function createAttendanceTable(
   data
 ) {
+  if (!data || !data.length) return '<p>No attendance data.</p>';
 
-  if (
-    !data ||
-    !data.length
-  ) {
+  const today = startOfToday();
+  let html = '<table><thead><tr>';
+  data[0].forEach(function(header) {
+    html += '<th>' + escapeHtml(header) + '</th>';
+  });
+  html += '</tr></thead><tbody>';
 
-    return '<p>No attendance data.</p>';
+  for (let r = 1; r < data.length; r++) {
+    const row = data[r] || [];
+    const studentName = String(row[0] || '').trim();
+    const studentSection = String(row[1] || '').trim();
+    const studentYear = String(currentSession_().yearLevel || '').trim() || '';
+    html += '<tr>';
 
-  }
-
-
-  const today =
-    startOfToday();
-
-
-  let html =
-    '<table><thead><tr>';
-
-
-  data[0]
-    .forEach(
-      function(header) {
-
-        html +=
-          '<th>' +
-          escapeHtml(header) +
-          '</th>';
-
+    row.forEach(function(cell, c) {
+      const value = String(cell || '').trim();
+      let className = '';
+      if (value.toUpperCase() === 'PRESENT') className = 'status-present';
+      else if (value.toUpperCase() === 'ABSENT') className = 'status-absent';
+      else {
+        const header = data[0][c];
+        const date = parseClientDate(header);
+        if (date && date > today) className = 'status-future';
+        else className = 'status-empty';
       }
-    );
 
-
-  html +=
-    '</tr></thead><tbody>';
-
-
-  for (
-    let r = 1;
-    r < data.length;
-    r++
-  ) {
-
-    html +=
-      '<tr>';
-
-
-    data[r]
-      .forEach(
-        function(cell, c) {
-
-          const value =
-            String(
-              cell || ''
-            ).trim();
-
-
-          let className =
-            '';
-
-
-          if (
-            value.toUpperCase() ===
-            'PRESENT'
-          ) {
-
-            className =
-              'status-present';
-
-          }
-
-          else if (
-            value.toUpperCase() ===
-            'ABSENT'
-          ) {
-
-            className =
-              'status-absent';
-
-          }
-
-          else {
-
-            const header =
-              data[0][c];
-
-
-            const date =
-              parseClientDate(
-                header
-              );
-
-
-            if (
-              date &&
-              date > today
-            ) {
-
-              className =
-                'status-future';
-
-            }
-
-            else {
-
-              className =
-                'status-empty';
-
-            }
-
-          }
-
-
-          html += `
-
-            <td
-              class="${className}"
-            >
-
-              ${escapeHtml(value)}
-
-            </td>
-
-          `;
-
-        }
-      );
-
-
-    html +=
-      '</tr>';
-
+      const isNameCell = c === 0 && studentName;
+      if (isNameCell) {
+        html += '<td class="' + className + '"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromAttendance_(' + JSON.stringify(studentName) + ',' + JSON.stringify(studentSection) + ',' + JSON.stringify(studentYear) + ')">' + escapeHtml(value) + '</button></td>';
+      } else {
+        html += '<td class="' + className + '">' + escapeHtml(value) + '</td>';
+      }
+    });
+    html += '</tr>';
   }
 
-
-  html +=
-    '</tbody></table>';
-
-
+  html += '</tbody></table>';
   return html;
-
 }
 
 
@@ -5904,7 +5825,7 @@ async function searchStudent_() {
     results.innerHTML = data.students.map(function(s){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
-      return '<div class="talaan-result-card"><div class="talaan-result-name">' + escapeHtml(s.name) + '</div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
+      return '<div class="talaan-result-card"><div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
 }
@@ -5964,7 +5885,7 @@ async function searchStudentFromHeader_() {
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
       return '<div class="talaan-result-card">' +
-        '<div class="talaan-result-name">' + escapeHtml(s.name) + '</div>' +
+        '<div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div>' +
         '<div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + '</div>' +
         '<div class="talaan-stat-grid">' +
           '<div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div>' +
@@ -5978,6 +5899,60 @@ async function searchStudentFromHeader_() {
     setPage_(html);
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message) + '</div>');
+  }
+}
+
+
+async function openStudentRecordFromAttendance_(name, section, yearLevel) {
+  await openStudentRecord_({name:name, section:section, yearLevel:yearLevel});
+}
+
+async function openStudentRecordFromSearch_(name, section, yearLevel) {
+  await openStudentRecord_({name:name, section:section, yearLevel:yearLevel});
+}
+
+async function openStudentRecord_(student) {
+  try {
+    const result = await apiRequest('studentrecord', student);
+    if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
+    const p = result.profile || {};
+    const a = p.attendance || {present:0, absent:0, rate:0, records:[], warning:false, warningLevel:'NONE'};
+    const warningClass = a.warning ? 'talaan-warning' : 'talaan-safe';
+    const warningText = a.warning ? a.warningLevel : 'NO WARNING';
+
+    const modal = document.createElement('div');
+    modal.className = 'talaan-student-record-modal';
+    modal.id = 'talaanStudentRecordModal';
+    modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
+
+    let recordsHtml = '';
+    if (!a.records || !a.records.length) {
+      recordsHtml = '<div class="status">No completed attendance records yet.</div>';
+    } else {
+      a.records.slice().reverse().forEach(function(r){
+        const type = r.eventType ? ' • ' + escapeHtml(r.eventType) : '';
+        const time = r.status === 'Present' && r.time ? ' • ' + escapeHtml(r.time) : '';
+        recordsHtml += '<div class="talaan-student-record-row ' + (r.status === 'Present' ? 'present' : 'absent') + '">' +
+          '<strong>' + escapeHtml(r.dateLabel) + '</strong>' +
+          '<div class="talaan-record-event"><strong>' + escapeHtml(r.event || 'Attendance Event') + '</strong><span class="talaan-record-type">' + type.replace(/^ • /,'') + (time ? ' • ' + time.replace(/^ • /,'') : '') + '</span></div>' +
+          '<strong>' + escapeHtml(r.status) + '</strong>' +
+        '</div>';
+      });
+    }
+
+    modal.innerHTML = '<div class="talaan-student-record-card" onclick="event.stopPropagation()">' +
+      '<div class="talaan-student-record-head"><div><div class="talaan-student-record-name">' + escapeHtml(p.name || student.name) + '</div><div class="talaan-student-record-meta">' + escapeHtml(p.section || student.section || '') + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel || student.yearLevel || '')) + (p.studentId ? ' • ' + escapeHtml(p.studentId) : '') + '</div></div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanStudentRecordModal\')?.remove()">×</button></div>' +
+      '<div class="talaan-student-record-stats">' +
+        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.present||0) + '</div><div class="l">Present</div></div>' +
+        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.absent||0) + '</div><div class="l">Absent</div></div>' +
+        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div>' +
+        '<div class="talaan-student-record-stat"><div class="n" style="font-size:14px">' + escapeHtml(warningText) + '</div><div class="l">Status</div></div>' +
+      '</div>' +
+      '<h3 class="dashboard-section-title">Attendance Records</h3><div class="talaan-student-record-list">' + recordsHtml + '</div>' +
+    '</div>';
+    document.body.appendChild(modal);
+  } catch (error) {
+    alert('Unable to load student record: ' + (error.message || error));
   }
 }
 
@@ -6004,7 +5979,7 @@ async function showStudentProfile_() {
       html += '<div class="status">No completed attendance records yet.</div>';
     } else {
       a.records.slice().reverse().forEach(function(r){
-        html += '<div class="talaan-record ' + (r.status === 'Present' ? 'present' : 'absent') + '"><strong>' + escapeHtml(r.dateLabel) + '</strong><span>' + escapeHtml(r.event || 'Attendance Event') + '</span><strong>' + escapeHtml(r.status) + '</strong></div>';
+        html += '<div class="talaan-record ' + (r.status === 'Present' ? 'present' : 'absent') + '"><strong>' + escapeHtml(r.dateLabel) + '</strong><span class="talaan-record-event"><strong>' + escapeHtml(r.event || 'Attendance Event') + '</strong><span class="talaan-record-type">' + escapeHtml(r.eventType || '') + (r.time ? ' • ' + escapeHtml(r.time) : '') + '</span></span><strong>' + escapeHtml(r.status) + '</strong></div>';
       });
     }
     html += '</div></div>';
@@ -6402,7 +6377,7 @@ window.addEventListener('DOMContentLoaded', function(){
 .dashboard-main-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(300px,32%)!important;gap:18px!important;align-items:start!important}
 .dashboard-left-column,.dashboard-right-column{min-width:0!important}
 .year-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important}
-.settings-list{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;align-items:start!important}
+.settings-list{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important;align-items:start!important}
 .talaan-code-summary{margin:8px 0 12px;border:1px solid #e3e8f1;border-radius:13px;background:#f8fafc;padding:10px}
 .talaan-code-summary-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px}
 .talaan-code-summary-head strong{color:#17266b;font-size:12px}
