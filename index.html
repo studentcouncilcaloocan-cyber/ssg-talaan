@@ -2833,7 +2833,7 @@ async function showAccountSettings_() {
     const passwordHtml = role === 'Student' ? '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><div class="talaan-settings-grid"><div><label>Current Password</label><input id="settingsCurrentPassword" type="password"></div><div><label>New Password</label><input id="settingsNewPassword" type="password"></div><div><label>Repeat New Password</label><input id="settingsRepeatPassword" type="password"></div></div><button class="primary-button" type="button" onclick="changeAccountPassword_()">CHANGE PASSWORD</button></div>' : '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><p class="section-description">This account uses its existing authorization code for sign-in, so password changes are not applicable to this staff account.</p></div>';
     const html = '<div class="talaan-account-settings-page"><h2 class="section-heading">⚙️ Settings</h2><p class="section-description">Manage your profile information and account settings.</p>' +
       '<div class="talaan-settings-card"><h3>🖼️ Profile Picture</h3><div class="talaan-settings-picture-row">' + picHtml + '<div><input id="settingsProfilePicture" type="file" accept="image/png,image/jpeg,image/webp"><p class="section-description">Optional. Choose a photo to use as your profile picture.</p></div></div></div>' +
-      '<div class="talaan-settings-card"><h3>✏️ Edit Name</h3><div class="talaan-settings-grid"><div><label>First Name</label><input id="settingsFirstName" value="' + escapeAttribute_(parts.first || '') + '"></div><div><label>Middle Initials</label><input id="settingsMiddleInitials" value="' + escapeAttribute_(parts.middle || '') + '"></div><div><label>Surname</label><input id="settingsSurname" value="' + escapeAttribute_(parts.surname || '') + '"></div></div><button class="primary-button" type="button" onclick="saveAccountSettings_()">SAVE PROFILE</button></div>' +
+      '<div class="talaan-settings-card"><h3>✏️ Edit Name</h3><div class="talaan-settings-grid"><div><label>First Name</label><input id="settingsFirstName" value="' + escapeAttr_(parts.first || '') + '"></div><div><label>Middle Initials</label><input id="settingsMiddleInitials" value="' + escapeAttr_(parts.middle || '') + '"></div><div><label>Surname</label><input id="settingsSurname" value="' + escapeAttr_(parts.surname || '') + '"></div></div><button class="primary-button" type="button" onclick="saveAccountSettings_()">SAVE PROFILE</button></div>' +
       passwordHtml + '</div>';
     setPage_(html);
     const file = document.getElementById('settingsProfilePicture');
@@ -4821,7 +4821,18 @@ function menuButton_(label, onclick, id, active) {
 function renderTalaanMenu_(activeId) {
   ensureHamburger_();
   const menu = document.getElementById('talaanMenu');
-  const session = currentSession_();
+  let session = currentSession_();
+  // Keep the hamburger menu populated even when the page was restored
+  // and the in-memory session has not been reattached yet.
+  if ((!session || !session.role) && !currentRole) {
+    const stored = getStoredTalaanSession_();
+    if (stored && stored.session) {
+      talaanSession = stored;
+      session = stored.session;
+      currentRole = stored.session.role || null;
+    }
+  }
+  session = session || {};
   const role = session.role || currentRole || '';
   const name = session.name || role;
   const position = session.position || role;
