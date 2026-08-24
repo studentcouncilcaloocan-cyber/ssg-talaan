@@ -3356,7 +3356,6 @@ async function addEvent() {
 
 async function refreshCurrentPageAfterMutation_() {
   await refreshDashboardData();
-  showTalaanToast_('REFRESHED');
   if (talaanActivePage_ === 'settings') {
     showSettings();
   } else if (talaanActivePage_ === 'attendance') {
@@ -4744,7 +4743,7 @@ function renderTalaanMenu_(activeId) {
         html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
       });
     }
-  } else {
+  } else if (role === 'Class Sec') {
     const lvl = session.yearLevel;
     html += '<div class="talaan-menu-group">Attendance</div>';
     html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
@@ -5108,6 +5107,10 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   ['navAttendance1','navAttendance2','navAttendance3','navAttendance4'].forEach(function(id){
     const el = document.getElementById(id);
     if (!el) return;
+    if (role === 'Student') {
+      el.style.display = 'none';
+      return;
+    }
     if (role !== 'Class Sec') {
       el.style.display = '';
       return;
