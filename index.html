@@ -1312,7 +1312,18 @@ th {
 .talaan-settings-avatar{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #e4e9f2}
 .talaan-settings-avatar-empty{display:flex;align-items:center;justify-content:center;background:#f3f6fa;font-size:38px}
 .talaan-settings-picture-row input{max-width:100%}
-@media(max-width:700px){.talaan-settings-grid{grid-template-columns:1fr}.talaan-settings-picture-row{align-items:flex-start;flex-direction:column}}
+.talaan-profile-crop-modal{position:fixed;inset:0;background:rgba(10,25,55,.62);z-index:100002;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(4px)}
+.talaan-profile-crop-card{width:min(520px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;padding:20px;box-shadow:0 25px 80px rgba(0,0,0,.28)}
+.talaan-profile-crop-stage{width:min(380px,82vw);height:min(380px,82vw);margin:12px auto;background:#111827;border-radius:18px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab}
+.talaan-profile-crop-stage.dragging{cursor:grabbing}
+.talaan-profile-crop-canvas{display:block;max-width:none;user-select:none;-webkit-user-select:none}
+.talaan-profile-crop-controls{display:flex;align-items:center;gap:10px;margin:12px 0}.talaan-profile-crop-controls label{font-size:12px;font-weight:900;color:#526174}.talaan-profile-crop-controls input{padding:0;width:100%;height:5px}
+.talaan-profile-crop-actions{display:flex;gap:9px}.talaan-profile-crop-actions button{flex:1}
+.talaan-header-profile{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #e4e9f2;background:#f3f6fa;box-shadow:0 4px 14px rgba(20,43,75,.10);flex:0 0 44px}
+.talaan-header-profile-empty{display:flex;align-items:center;justify-content:center;font-size:19px;color:#17266b}
+.top-account{position:relative;padding-right:58px}
+@media(max-width:1100px) and (min-width:701px){.top-account{padding-right:56px}.talaan-header-profile{width:42px;height:42px;flex-basis:42px}}
+@media(max-width:700px){.talaan-profile-crop-card{padding:16px}.talaan-profile-crop-stage{width:min(330px,82vw);height:min(330px,82vw)}.talaan-profile-crop-actions{flex-direction:column}.talaan-header-profile{width:40px;height:40px;flex-basis:40px}.top-account{padding-right:0!important;gap:7px!important}.talaan-header-profile-wrap{display:flex!important;align-items:center!important;justify-content:center!important}.talaan-mobile-profile{display:flex!important}}
 </style>
 
 </head>
@@ -1616,6 +1627,9 @@ th {
       </div>
 
       <div class="top-account">
+        <div class="talaan-header-profile-wrap" id="talaanHeaderProfileWrap" style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center">
+          <div id="talaanHeaderProfile" class="talaan-header-profile talaan-header-profile-empty" aria-label="Profile picture">👤</div>
+        </div>
         <div
           id="roleBadge"
           class="role-badge"
@@ -5144,6 +5158,7 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
+  loadHeaderProfilePicture_();
 
   try {
     await loadDashboard('__NO_DATE__');
@@ -6430,21 +6445,15 @@ function parseNamePartsClient_(name) {
   return {first:parts[0], middle:parts.slice(1,-1).join(' '), surname:parts[parts.length-1]};
 }
 
+let talaanProfileCropState_ = null;
+
 function resizeProfilePicture_(file) {
   return new Promise(function(resolve, reject) {
     const reader = new FileReader();
     reader.onload = function() {
       const img = new Image();
       img.onload = function() {
-        const size = 180;
-        const canvas = document.createElement('canvas');
-        canvas.width = size; canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,size,size);
-        const scale = Math.max(size/img.width, size/img.height);
-        const w = img.width * scale, h = img.height * scale;
-        ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.78));
+        openProfileCropper_(img, resolve, reject);
       };
       img.onerror = function(){ reject(new Error('Unable to read the selected image.')); };
       img.src = reader.result;
@@ -6453,6 +6462,77 @@ function resizeProfilePicture_(file) {
     reader.readAsDataURL(file);
   });
 }
+
+function openProfileCropper_(img, resolve, reject) {
+  const existing = document.getElementById('talaanProfileCropModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'talaanProfileCropModal';
+  modal.className = 'talaan-profile-crop-modal';
+  modal.innerHTML = '<div class="talaan-profile-crop-card">' +
+    '<h3 style="margin:0;color:#17266b">🖼️ Edit Profile Picture</h3>' +
+    '<p class="section-description" style="margin:6px 0 0">Drag the photo to position it, then adjust the zoom.</p>' +
+    '<div class="talaan-profile-crop-stage" id="talaanProfileCropStage"><canvas id="talaanProfileCropCanvas" class="talaan-profile-crop-canvas"></canvas></div>' +
+    '<div class="talaan-profile-crop-controls"><label>ZOOM</label><input id="talaanProfileCropZoom" type="range" min="1" max="3" step="0.01" value="1"></div>' +
+    '<div class="talaan-profile-crop-actions"><button type="button" class="secondary-button" id="talaanProfileCropCancel">CANCEL</button><button type="button" class="primary-button" id="talaanProfileCropSave">CROP & USE PHOTO</button></div>' +
+    '</div>';
+  document.body.appendChild(modal);
+
+  const stage = document.getElementById('talaanProfileCropStage');
+  const canvas = document.getElementById('talaanProfileCropCanvas');
+  const zoom = document.getElementById('talaanProfileCropZoom');
+  const ctx = canvas.getContext('2d');
+  const size = 360;
+  canvas.width = size; canvas.height = size;
+  const baseScale = Math.max(size / img.width, size / img.height);
+  const state = {scale:1, x:0, y:0, drag:false, sx:0, sy:0, ox:0, oy:0};
+  talaanProfileCropState_ = state;
+
+  function draw(){
+    state.scale = Number(zoom.value || 1);
+    ctx.clearRect(0,0,size,size);
+    ctx.fillStyle = '#111827'; ctx.fillRect(0,0,size,size);
+    const w = img.width * baseScale * state.scale;
+    const h = img.height * baseScale * state.scale;
+    const maxX = Math.max(0,(w-size)/2 + 70);
+    const maxY = Math.max(0,(h-size)/2 + 70);
+    state.x = Math.max(-maxX, Math.min(maxX, state.x));
+    state.y = Math.max(-maxY, Math.min(maxY, state.y));
+    ctx.drawImage(img, (size-w)/2 + state.x, (size-h)/2 + state.y, w, h);
+  }
+  draw();
+  zoom.addEventListener('input', draw);
+  function pointerDown(e){ state.drag=true; state.sx=e.clientX; state.sy=e.clientY; state.ox=state.x; state.oy=state.y; stage.classList.add('dragging'); stage.setPointerCapture?.(e.pointerId); }
+  function pointerMove(e){ if(!state.drag)return; state.x=state.ox+(e.clientX-state.sx); state.y=state.oy+(e.clientY-state.sy); draw(); }
+  function pointerUp(){ state.drag=false; stage.classList.remove('dragging'); }
+  stage.addEventListener('pointerdown',pointerDown); stage.addEventListener('pointermove',pointerMove); stage.addEventListener('pointerup',pointerUp); stage.addEventListener('pointercancel',pointerUp);
+  document.getElementById('talaanProfileCropCancel').onclick=function(){ modal.remove(); reject(new Error('Profile picture editing cancelled.')); };
+  document.getElementById('talaanProfileCropSave').onclick=function(){
+    draw();
+    const data = canvas.toDataURL('image/jpeg',0.72);
+    modal.remove();
+    resolve(data);
+  };
+  modal.onclick=function(e){ if(e.target===modal){ modal.remove(); reject(new Error('Profile picture editing cancelled.')); } };
+}
+
+function setHeaderProfilePicture_(dataUrl) {
+  const target = document.getElementById('talaanHeaderProfile');
+  if (!target) return;
+  if (dataUrl) {
+    target.outerHTML = '<img id="talaanHeaderProfile" class="talaan-header-profile" src="' + escapeAttribute_(dataUrl) + '" alt="Profile picture">';
+  } else {
+    target.outerHTML = '<div id="talaanHeaderProfile" class="talaan-header-profile talaan-header-profile-empty" aria-label="Profile picture">👤</div>';
+  }
+}
+
+async function loadHeaderProfilePicture_() {
+  try {
+    const result = await apiRequest('accountsettings');
+    if (result && result.success) setHeaderProfilePicture_(result.settings?.profilePicture || '');
+  } catch(e) {}
+}
+
 
 async function showAccountSettings_() {
   renderTalaanMenu_('accountsettings');
@@ -6471,7 +6551,7 @@ async function showAccountSettings_() {
       ? '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><div class="talaan-settings-grid"><div><label>Current Password</label><input id="settingsCurrentPassword" type="password"></div><div><label>New Password</label><input id="settingsNewPassword" type="password"></div><div><label>Repeat New Password</label><input id="settingsRepeatPassword" type="password"></div></div><button class="primary-button" type="button" onclick="changeAccountPassword_()">CHANGE PASSWORD</button></div>'
       : '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><p class="section-description">This account uses its existing authorization code for sign-in, so password changes are not applicable to this staff account.</p></div>';
     const html = '<div class="talaan-account-settings-page"><h2 class="section-heading">⚙️ Settings</h2><p class="section-description">Manage your profile information and account settings.</p>' +
-      '<div class="talaan-settings-card"><h3>🖼️ Profile Picture</h3><div class="talaan-settings-picture-row">' + picHtml + '<div><input id="settingsProfilePicture" type="file" accept="image/png,image/jpeg,image/webp"><p class="section-description">Optional. Choose a photo to use as your profile picture.</p></div></div></div>' +
+      '<div class="talaan-settings-card"><h3>🖼️ Profile Picture</h3><div class="talaan-settings-picture-row">' + picHtml + '<div><input id="settingsProfilePicture" type="file" accept="image/png,image/jpeg,image/webp"><p class="section-description">Choose a photo, then crop and position it before saving your profile.</p></div></div></div>' +
       '<div class="talaan-settings-card"><h3>✏️ Edit Name</h3><div class="talaan-settings-grid"><div><label>First Name</label><input id="settingsFirstName" value="' + escapeAttr_(parts.first || '') + '"></div><div><label>Middle Initials</label><input id="settingsMiddleInitials" value="' + escapeAttr_(parts.middle || '') + '"></div><div><label>Surname</label><input id="settingsSurname" value="' + escapeAttr_(parts.surname || '') + '"></div></div><button class="primary-button" type="button" onclick="saveAccountSettings_()">SAVE PROFILE</button></div>' +
       passwordHtml + '</div>';
     setPage_(html);
@@ -6482,7 +6562,7 @@ async function showAccountSettings_() {
         const data = await resizeProfilePicture_(this.files[0]);
         const preview = document.getElementById('talaanSettingsPreview');
         if (preview) preview.outerHTML = '<img id="talaanSettingsPreview" src="' + escapeAttr_(data) + '" alt="Profile Picture" class="talaan-settings-avatar">';
-      } catch(e) { alert(e.message || e); this.value=''; }
+      } catch(e) { if ((e.message || '') !== 'Profile picture editing cancelled.') alert(e.message || e); this.value=''; }
     });
   } catch (error) {
     setPage_('<div class="status">❌ ' + escapeHtml(error.message || String(error)) + '</div>');
@@ -6505,6 +6585,7 @@ async function saveAccountSettings_() {
       localStorage.setItem('talaanSession', JSON.stringify(talaanSession));
       currentRole = result.session.role;
     }
+    setHeaderProfilePicture_(result.profilePicture || profilePicture || '');
     alert('✅ Profile updated successfully.');
     renderTalaanMenu_('accountsettings');
     await showAccountSettings_();
