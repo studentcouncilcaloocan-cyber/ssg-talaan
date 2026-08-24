@@ -1271,6 +1271,8 @@ th {
 .talaan-record-time{font-weight:800;color:#53627a;font-size:13px}
 .talaan-record-type{font-size:12px;color:#718096;font-weight:800}
 .talaan-record-event{display:flex;flex-direction:column;gap:3px;min-width:0}
+
+.talaan-account-settings-page{max-width:900px;margin:0 auto}.talaan-settings-card{background:#fff;border:1px solid #e4e9f2;border-radius:18px;padding:20px;margin:0 0 14px;box-shadow:0 8px 25px rgba(20,35,70,.05)}.talaan-settings-card h3{margin:0 0 15px;color:#17266b}.talaan-settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:15px}.talaan-settings-grid label{display:block;font-size:11px;font-weight:900;color:#718096;margin-bottom:6px}.talaan-settings-grid input{width:100%;box-sizing:border-box}.talaan-settings-picture-row{display:flex;align-items:center;gap:18px}.talaan-settings-avatar{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #e4e9f2}.talaan-settings-avatar-empty{display:flex;align-items:center;justify-content:center;background:#f3f6fa;font-size:38px}.talaan-settings-picture-row input{max-width:100%}@media(max-width:700px){.talaan-settings-grid{grid-template-columns:1fr}.talaan-settings-picture-row{align-items:flex-start;flex-direction:column}}
 .talaan-student-record-modal{position:fixed;inset:0;background:rgba(15,29,62,.42);backdrop-filter:blur(5px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px}
 .talaan-student-record-card{width:min(760px,96vw);max-height:90vh;overflow:auto;background:#fff;border-radius:22px;padding:24px;box-shadow:0 25px 80px rgba(10,25,60,.25)}
 .talaan-student-record-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
@@ -2758,7 +2760,7 @@ function createAttendanceTable(
       }
 
       const isNameCell = c === 0 && studentName;
-      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Teacher' || currentRole === 'Admin';
+      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin';
       if (isNameCell && canOpenStudentRecord) {
         html += '<td class="' + className + '"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromAttendance_(' + JSON.stringify(studentName) + ',' + JSON.stringify(studentSection) + ',' + JSON.stringify(studentYear) + ')">' + escapeHtml(value) + '</button></td>';
       } else {
@@ -2777,6 +2779,129 @@ function createAttendanceTable(
 /* =====================================================
    SETTINGS
 ===================================================== */
+
+
+function parseNamePartsClient_(name) {
+  const text = String(name || '').trim();
+  if (!text) return {first:'', middle:'', surname:''};
+  if (text.indexOf(',') !== -1) {
+    const parts = text.split(',');
+    const surname = (parts.shift() || '').trim();
+    const rest = (parts.join(' ') || '').trim().split(/\s+/).filter(Boolean);
+    return {first: rest.shift() || '', middle: rest.join(' '), surname:surname};
+  }
+  const parts = text.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return {first:parts[0], middle:'', surname:''};
+  return {first:parts[0], middle:parts.slice(1,-1).join(' '), surname:parts[parts.length-1]};
+}
+
+function resizeProfilePicture_(file) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      const img = new Image();
+      img.onload = function() {
+        const size = 180;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,size,size);
+        const scale = Math.max(size/img.width, size/img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, (size-w)/2, (size-h)/2, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      img.onerror = function(){ reject(new Error('Unable to read the selected image.')); };
+      img.src = reader.result;
+    };
+    reader.onerror = function(){ reject(new Error('Unable to read the selected image.')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function showAccountSettings_() {
+  renderTalaanMenu_('accountsettings');
+  setPage_('<div class="status">Loading settings...</div>');
+  try {
+    const result = await apiRequest('accountsettings');
+    if (!result || result.success !== true) throw new Error(result?.error || 'Settings could not be loaded.');
+    const st = result.settings || {};
+    const parts = st.nameParts || parseNamePartsClient_(st.name || '');
+    const pic = st.profilePicture || '';
+    const role = st.role || currentRole || '';
+    const picHtml = pic ? '<img id="talaanSettingsPreview" src="' + escapeAttr_(pic) + '" alt="Profile Picture" class="talaan-settings-avatar">' : '<div id="talaanSettingsPreview" class="talaan-settings-avatar talaan-settings-avatar-empty">👤</div>';
+    const passwordHtml = role === 'Student' ? '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><div class="talaan-settings-grid"><div><label>Current Password</label><input id="settingsCurrentPassword" type="password"></div><div><label>New Password</label><input id="settingsNewPassword" type="password"></div><div><label>Repeat New Password</label><input id="settingsRepeatPassword" type="password"></div></div><button class="primary-button" type="button" onclick="changeAccountPassword_()">CHANGE PASSWORD</button></div>' : '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><p class="section-description">This account uses its existing authorization code for sign-in, so password changes are not applicable to this staff account.</p></div>';
+    const html = '<div class="talaan-account-settings-page"><h2 class="section-heading">⚙️ Settings</h2><p class="section-description">Manage your profile information and account settings.</p>' +
+      '<div class="talaan-settings-card"><h3>🖼️ Profile Picture</h3><div class="talaan-settings-picture-row">' + picHtml + '<div><input id="settingsProfilePicture" type="file" accept="image/png,image/jpeg,image/webp"><p class="section-description">Optional. Choose a photo to use as your profile picture.</p></div></div></div>' +
+      '<div class="talaan-settings-card"><h3>✏️ Edit Name</h3><div class="talaan-settings-grid"><div><label>First Name</label><input id="settingsFirstName" value="' + escapeAttribute_(parts.first || '') + '"></div><div><label>Middle Initials</label><input id="settingsMiddleInitials" value="' + escapeAttribute_(parts.middle || '') + '"></div><div><label>Surname</label><input id="settingsSurname" value="' + escapeAttribute_(parts.surname || '') + '"></div></div><button class="primary-button" type="button" onclick="saveAccountSettings_()">SAVE PROFILE</button></div>' +
+      passwordHtml + '</div>';
+    setPage_(html);
+    const file = document.getElementById('settingsProfilePicture');
+    if (file) file.addEventListener('change', async function(){ if (!this.files || !this.files[0]) return; try { const data = await resizeProfilePicture_(this.files[0]); const preview = document.getElementById('talaanSettingsPreview'); if (preview) { preview.outerHTML = '<img id="talaanSettingsPreview" src="' + escapeAttr_(data) + '" alt="Profile Picture" class="talaan-settings-avatar">'; } } catch(e) { alert(e.message || e); this.value=''; } });
+  } catch (error) { setPage_('<div class="status">❌ ' + escapeHtml(error.message || String(error)) + '</div>'); }
+}
+
+async function saveAccountSettings_() {
+  try {
+    const first = document.getElementById('settingsFirstName')?.value.trim() || '';
+    const middle = document.getElementById('settingsMiddleInitials')?.value.trim() || '';
+    const surname = document.getElementById('settingsSurname')?.value.trim() || '';
+    if (!first || !surname) throw new Error('First Name and Surname are required.');
+    const preview = document.getElementById('talaanSettingsPreview');
+    const profilePicture = preview && preview.tagName === 'IMG' ? preview.src : '';
+    const name = [first, middle, surname].filter(Boolean).join(' ');
+    const result = await apiRequest('updateaccountsettings', {name:name, profilePicture:profilePicture});
+    if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save profile.');
+    if (result.session) { talaanSession.session = result.session; localStorage.setItem('talaanSession', JSON.stringify(talaanSession)); currentRole = result.session.role; }
+    alert('✅ Profile updated successfully.');
+    renderTalaanMenu_('accountsettings');
+    await showAccountSettings_();
+  } catch (error) { alert('❌ ' + (error.message || error)); }
+}
+
+async function changeAccountPassword_() {
+  try {
+    const currentPassword = document.getElementById('settingsCurrentPassword')?.value || '';
+    const newPassword = document.getElementById('settingsNewPassword')?.value || '';
+    const repeat = document.getElementById('settingsRepeatPassword')?.value || '';
+    if (!currentPassword || !newPassword || !repeat) throw new Error('Please complete all password fields.');
+    if (newPassword !== repeat) throw new Error('New passwords do not match.');
+    const result = await apiRequest('changepassword', {currentPassword:currentPassword, newPassword:newPassword});
+    if (!result || result.success !== true) throw new Error(result?.error || 'Unable to change password.');
+    alert('✅ Password changed successfully.');
+    document.getElementById('settingsCurrentPassword').value=''; document.getElementById('settingsNewPassword').value=''; document.getElementById('settingsRepeatPassword').value='';
+  } catch (error) { alert('❌ ' + (error.message || error)); }
+}
+
+
+function eventCutoffReachedClient_(dateText, cutoffText) {
+  const d = parseClientDate(dateText);
+  const cutoff = String(cutoffText || '').trim();
+  if (!d || !cutoff) return false;
+  const m = cutoff.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(AM|PM)?$/i);
+  if (!m) return false;
+  let h = Number(m[1]), min = Number(m[2] || 0);
+  const mer = (m[3] || '').toUpperCase();
+  if (mer) { if (h < 1 || h > 12) return false; if (mer === 'AM' && h === 12) h = 0; if (mer === 'PM' && h !== 12) h += 12; }
+  if (h > 23 || min > 59) return false;
+  const dt = new Date(d.getTime());
+  dt.setHours(h, min, 0, 0);
+  return Date.now() >= dt.getTime();
+}
+
+function showTalaanToast_(message) {
+  let toast = document.getElementById('talaanTopToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'talaanTopToast';
+    toast.className = 'talaan-top-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(window.__talaanToastTimer);
+  window.__talaanToastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 1800);
+}
 
 function showSettings() {
 
@@ -3341,6 +3466,7 @@ async function addEvent() {
 
 async function refreshCurrentPageAfterMutation_() {
   await refreshDashboardData();
+  showTalaanToast_('REFRESHED');
   if (talaanActivePage_ === 'settings') {
     showSettings();
   } else if (talaanActivePage_ === 'attendance') {
@@ -4708,8 +4834,8 @@ function renderTalaanMenu_(activeId) {
   html += '<div class="talaan-menu-role">' + escapeHtml(role + (position ? ' • ' + position : '') + year) + '</div>';
   html += '</div>';
 
-  if (role !== 'Class Sec') {
-    html += '<div class="talaan-menu-search">' +
+  if (role === 'Secretary' || role === 'Class Sec' || role === 'Teacher' || role === 'Admin') {
+    html += '<div class="talaan-menu-search">'
       '<input id="talaanMenuSearchInput" type="search" placeholder="Search student..." autocomplete="off" onkeydown="if(event.key===\'Enter\'){event.preventDefault();searchStudentFromMenu_();}">' +
       '<button type="button" onclick="searchStudentFromMenu_()">SEARCH</button>' +
     '</div>';
@@ -4718,20 +4844,20 @@ function renderTalaanMenu_(activeId) {
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
-  if (role !== 'Class Sec') {
+  if (role === 'Class Sec') {
+    const lvl = session.yearLevel;
     html += '<div class="talaan-menu-group">Attendance</div>';
-    if (role === 'Student' || role === 'Teacher') {
+    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
+  } else if (role === 'Secretary' || role === 'Admin' || role === 'Teacher') {
+    html += '<div class="talaan-menu-group">Attendance</div>';
+    if (role === 'Teacher') {
       const lvl = session.yearLevel;
-      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
+      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
     } else {
       ['1','2','3','4'].forEach(function(level) {
         html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
       });
     }
-  } else {
-    const lvl = session.yearLevel;
-    html += '<div class="talaan-menu-group">Attendance</div>';
-    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
   }
 
   if (role === 'Student') {
@@ -4755,6 +4881,7 @@ function renderTalaanMenu_(activeId) {
   }
 
   html += '<div class="talaan-menu-group">Account</div>';
+  html += menuButton_('⚙️ Settings', "talaanNavigate_('accountsettings')", 'menuAccountSettings', activeId === 'accountsettings');
   html += '<button class="danger" onclick="talaanLogout_()">↪ Logout</button>';
   menu.innerHTML = html;
 
@@ -5059,6 +5186,13 @@ function hideTalaanLoading_(){
   screen.classList.add('hide');
 }
 
+
+function updateHeaderSearchVisibility_() {
+  const shell = document.querySelector('.talaan-search-shell');
+  const role = currentSession_().role || currentRole || '';
+  if (shell) shell.style.display = (role === 'Student' || !role) ? 'none' : '';
+}
+
 async function openDashboard(role, suppliedSession, transitionOptions) {
   currentRole = role;
   if (suppliedSession) talaanSession = talaanSession || {token:'',session:suppliedSession};
@@ -5082,6 +5216,7 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   ['navAttendance1','navAttendance2','navAttendance3','navAttendance4'].forEach(function(id){
     const el = document.getElementById(id);
     if (!el) return;
+    if (role === 'Student') { el.style.display = 'none'; return; }
     if (role !== 'Class Sec') {
       el.style.display = '';
       return;
@@ -5090,6 +5225,7 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
     const buttonYear = id.replace('navAttendance','');
     el.style.display = buttonYear === assignedYear ? '' : 'none';
   });
+  updateHeaderSearchVisibility_();
   const oldSecretaryNav = document.getElementById('secretaryNavigation');
   if (oldSecretaryNav) oldSecretaryNav.style.display = role === 'Secretary' ? '' : 'none';
 
@@ -5099,16 +5235,15 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   try {
     await loadDashboard('__NO_DATE__');
 
-    // Loading screen remains in front until the welcome display is ready.
+    // On normal session restoration (including a page refresh), do not replay the
+    // Welcome animation. Keep the loading screen only while the first dashboard
+    // snapshot is being prepared, then reveal the app immediately.
     hideTalaanLoading_();
-    await new Promise(function(resolve){ setTimeout(resolve, 120); });
-
-    // Every successful login gets the welcome display before the site.
-    await showTalaanTransition_(currentSession_(), {
-      accountCreated: !!transitionOptions.accountCreated
-    });
-
-    // Only NOW reveal the actual TALAAN application.
+    if (!transitionOptions.skipWelcome) {
+      await showTalaanTransition_(currentSession_(), {
+        accountCreated: !!transitionOptions.accountCreated
+      });
+    }
     document.getElementById('appScreen')?.classList.remove('hidden');
   } catch (error) {
     hideTalaanLoading_();
@@ -5292,6 +5427,7 @@ async function talaanNavigate_(page, sheetName) {
   if (page === 'profile') { await showStudentProfile_(); return; }
   if (page === 'warnings') { await showWarnings_(); return; }
   if (page === 'settings') { talaanActivePage_ = 'settings'; showSettings(); return; }
+  if (page === 'accountsettings') { await showAccountSettings_(); return; }
   if (page === 'studentdirectory') { await showStudentDirectory_(); return; }
   if (page === 'scanner') { openScanner(); return; }
 }
@@ -5939,7 +6075,7 @@ async function searchStudentFromHeader_() {
     html += data.students.map(function(s, index){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
-      const talaanIdButton = (currentRole === 'Secretary' && s.studentId)
+      const talaanIdButton = ((currentRole === 'Secretary' || currentRole === 'Class Sec') && s.studentId)
         ? '<div style="margin-top:12px"><button type="button" class="primary-button" style="width:auto;margin:0" onclick="openSearchStudentIdPreviewByIndex_(' + index + ')">🪪 View TALAAN ID & QR</button></div>'
         : '';
       return '<div class="talaan-result-card">' +
@@ -6001,7 +6137,7 @@ async function openStudentRecordFromSearch_(name, section, yearLevel) {
 }
 
 async function openStudentRecord_(student) {
-  if (!(currentRole === 'Secretary' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
+  if (!(currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
   try {
     const result = await apiRequest('studentrecord', student);
     if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
@@ -6030,19 +6166,38 @@ async function openStudentRecord_(student) {
       });
     }
 
+    const profilePictureHtml = p.profilePicture ? '<img src="' + escapeAttr_(p.profilePicture) + '" alt="Profile Picture" style="width:82px;height:82px;border-radius:50%;object-fit:cover;border:3px solid #e6ebf3">' : '<div style="width:82px;height:82px;border-radius:50%;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:30px">👤</div>';
     modal.innerHTML = '<div class="talaan-student-record-card" onclick="event.stopPropagation()">' +
-      '<div class="talaan-student-record-head"><div><div class="talaan-student-record-name">' + escapeHtml(p.name || student.name) + '</div><div class="talaan-student-record-meta">' + escapeHtml(p.section || student.section || '') + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel || student.yearLevel || '')) + (p.studentId ? ' • ' + escapeHtml(p.studentId) : '') + '</div></div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanStudentRecordModal\')?.remove()">×</button></div>' +
+      '<div class="talaan-student-record-head"><div style="display:flex;align-items:center;gap:14px">' + profilePictureHtml + '<div><div class="talaan-student-record-name">' + escapeHtml(p.name || student.name) + '</div><div class="talaan-student-record-meta">' + escapeHtml(p.section || student.section || '') + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel || student.yearLevel || '')) + (p.studentId ? ' • ' + escapeHtml(p.studentId) : '') + '</div></div></div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanStudentRecordModal\')?.remove()">×</button></div>' +
       '<div class="talaan-student-record-stats">' +
         '<div class="talaan-student-record-stat"><div class="n">' + Number(a.present||0) + '</div><div class="l">Present</div></div>' +
         '<div class="talaan-student-record-stat"><div class="n">' + Number(a.absent||0) + '</div><div class="l">Absent</div></div>' +
         '<div class="talaan-student-record-stat"><div class="n">' + Number(a.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div>' +
         '<div class="talaan-student-record-stat"><div class="n" style="font-size:14px">' + escapeHtml(warningText) + '</div><div class="l">Status</div></div>' +
       '</div>' +
+      (currentRole === 'Secretary' && p.currentEvent ? '<div class="talaan-manual-attendance"><h3 class="dashboard-section-title">Manual Attendance Checking</h3><div class="talaan-manual-event"><strong>' + escapeHtml(p.currentEvent.event || 'Current Event') + '</strong><span>' + escapeHtml(p.currentEvent.date || '') + (p.currentEvent.cutoff ? ' • Cut-off ' + escapeHtml(p.currentEvent.cutoff) : '') + '</span></div><p class="talaan-manual-warning">⚠️ Secretary only. Please verify the student before changing attendance. Manual checking is unavailable after the event cut-off.</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><select id="manualAttendanceStatus"><option value="present" ' + (normalizeTextClient_(p.currentEvent.currentStatus)==='present'?'selected':'') + '>Present</option><option value="absent" ' + (normalizeTextClient_(p.currentEvent.currentStatus)==='absent'?'selected':'') + '>Absent</option></select><button type="button" class="primary-button" onclick="saveManualAttendance_(' + JSON.stringify({studentId:p.studentId,name:p.name,section:p.section,yearLevel:p.yearLevel}) + ')" ' + (p.currentEvent.editable ? '' : 'disabled') + '>SAVE ATTENDANCE</button></div>' + (!p.currentEvent.editable ? '<div class="status" style="margin-top:10px">🔒 ' + escapeHtml(p.currentEvent.reason || 'Attendance editing is closed.') + '</div>' : '') + '</div>' : '') +
       '<h3 class="dashboard-section-title">Attendance Records</h3><div class="talaan-student-record-list">' + recordsHtml + '</div>' +
     '</div>';
     document.body.appendChild(modal);
   } catch (error) {
     alert('Unable to load student record: ' + (error.message || error));
+  }
+}
+
+
+async function saveManualAttendance_(student) {
+  if (currentRole !== 'Secretary') return;
+  const status = document.getElementById('manualAttendanceStatus')?.value || '';
+  if (!status) return;
+  if (!confirm('⚠️ Please verify the student before changing attendance.\n\nChange this student to ' + (status === 'present' ? 'PRESENT' : 'ABSENT') + '?')) return;
+  try {
+    const result = await apiRequest('manualattendance', Object.assign({}, student, {status:status}));
+    if (!result || result.success !== true) throw new Error(result?.error || 'Unable to change attendance.');
+    document.getElementById('talaanStudentRecordModal')?.remove();
+    showTalaanToast_('ATTENDANCE CHANGED • ' + (result.status || status).toUpperCase());
+    await openStudentRecord_(student);
+  } catch (error) {
+    alert('❌ Unable to change attendance.\n\n' + (error.message || error));
   }
 }
 
@@ -6058,8 +6213,9 @@ async function showStudentProfile_() {
     const warningClass = a.warning ? 'talaan-warning' : 'talaan-safe';
     const warningText = a.warning ? a.warningLevel : 'NO WARNING';
 
+    const myPicture = p.profilePicture ? '<img src="' + escapeAttr_(p.profilePicture) + '" alt="Profile Picture" class="talaan-settings-avatar" style="display:block;margin-bottom:12px">' : '<div class="talaan-settings-avatar talaan-settings-avatar-empty" style="margin-bottom:12px">👤</div>';
     let html = '<div class="talaan-profile-grid"><div class="talaan-profile-card">' +
-      '<h2 class="section-heading">👤 My Profile</h2>' +
+      '<h2 class="section-heading">👤 My Profile</h2>' + myPicture +
       '<h3 style="font-size:25px;color:#17266b;margin-bottom:4px">' + escapeHtml(p.name) + '</h3>' +
       '<p class="section-description">' + escapeHtml(p.section) + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel)) + '</p>' +
       '<div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + a.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + a.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(a.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div><div class="talaan-mini-stat ' + warningClass + '"><div class="n" style="font-size:14px">' + escapeHtml(warningText) + '</div><div class="l">Warning Status</div></div></div>' +
@@ -6174,11 +6330,11 @@ function showSettings() {
       '<div class="setting-field"><label>EVENT</label><input id="event_' + row + '" value="' + escapeAttribute(event) + '"></div>' +
       '<div class="setting-field"><label>DATE</label><input id="date_' + row + '" value="' + escapeAttribute(date) + '"></div>' +
       '<div class="setting-field"><label>CUT-OFF</label><input id="cutoff_' + row + '" value="' + escapeAttribute(cutoff) + '"></div>' +
-      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '">' +
+      '<div class="setting-field"><label>STATUS</label><select id="status_' + row + '" ' + (eventCutoffReachedClient_(date, cutoff) ? 'disabled' : '') + '>' +
         '<option value="Scheduled" ' + (normalizeTextClient_(status)==='scheduled'?'selected':'') + '>Scheduled</option>' +
         '<option value="Active" ' + (normalizeTextClient_(status)==='active'?'selected':'') + '>Active</option>' +
         '<option value="Closed" ' + (normalizeTextClient_(status)==='closed'?'selected':'') + '>Closed</option>' +
-      '</select></div>' +
+      '</select>' + (eventCutoffReachedClient_(date, cutoff) ? '<small style="display:block;margin-top:5px;color:#a82222;font-weight:800">Cut-off reached. Change the cut-off time to edit status.</small>' : '') + '</div>' +
       '<div class="setting-field"><label>EVENT TYPE</label><select id="type_' + row + '">' +
         '<option value="Physical" ' + (normalizeTextClient_(type)==='physical'?'selected':'') + '>Physical</option>' +
         '<option value="Online" ' + (normalizeTextClient_(type)==='online'?'selected':'') + '>Online</option>' +
@@ -6193,21 +6349,30 @@ function showSettings() {
 async function saveSettingRow(row) {
   if (currentRole !== 'Secretary') return;
   try {
-    const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||'',type:document.getElementById('type_'+row)?.value.trim()||'Physical'});
+    const eventName = document.getElementById('event_'+row)?.value.trim() || 'Event';
+    const result = await apiRequest('updateSettings', {
+      row: row,
+      event: eventName,
+      date: document.getElementById('date_'+row)?.value.trim() || '',
+      cutoff: document.getElementById('cutoff_'+row)?.value.trim() || '',
+      status: document.getElementById('status_'+row)?.value.trim() || '',
+      type: document.getElementById('type_'+row)?.value.trim() || 'Physical'
+    });
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
-    alert('✅ Event updated successfully.');
     await refreshCurrentPageAfterMutation_();
+    alert('[' + eventName + '] CHANGED/SAVED');
   } catch(error) { alert('❌ Unable to save event.\n\n' + error.message); }
 }
 
 async function deleteEventRow_(row) {
   if (currentRole !== 'Secretary') return;
-  if (!confirm('Delete this event from Event Settings? Its matching attendance date column will also be removed from all attendance tabs.')) return;
+  const card = document.querySelector('.setting-card .row-badge')?.closest('.setting-card');
+  const eventName = document.getElementById('event_'+row)?.value.trim() || 'Event';
   try {
     const result = await apiRequest('deleteEvent',{row:row});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to delete event.');
-    alert('🗑 Event deleted successfully.');
     await refreshCurrentPageAfterMutation_();
+    alert('[' + eventName + '] DELETED');
   } catch(error) { alert('❌ Unable to delete event.\n\n' + error.message); }
 }
 
@@ -6222,11 +6387,15 @@ async function addEvent() {
   try {
     const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status,type:type});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
-    alert('✅ New event added successfully.');
-    document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
-    closeAddEvent();await refreshCurrentPageAfterMutation_();
+    document.getElementById('newEvent').value='';
+    document.getElementById('newDate').value='';
+    document.getElementById('newCutoff').value='';
+    closeAddEvent();
+    await refreshCurrentPageAfterMutation_();
+    alert('[' + event + '] SAVED');
   } catch(error){alert('❌ Unable to add event.\n\n'+error.message);}
 }
+
 
 async function refreshDashboardData() {
   const data = await apiRequest('dashboard', {_t: Date.now()});
@@ -6279,6 +6448,7 @@ window.addEventListener('DOMContentLoaded', function(){
   injectTalaanBranding_();
   ensureHamburger_();
   renderHeaderLogo_();
+  updateHeaderSearchVisibility_();
 
   // Make the original Teacher/Student button use the protected portal.
   const roleButtons=document.querySelectorAll('.role-button');
@@ -6301,7 +6471,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
     if(!data || data.success!==true) throw new Error('Invalid session');
-    openDashboard(currentRole, stored.session);
+    openDashboard(currentRole, stored.session, {skipWelcome:true, restore:true});
   }).catch(function(){
     clearTalaanSession_();
     currentRole=null;
@@ -6492,6 +6662,17 @@ window.addEventListener('DOMContentLoaded', function(){
 }
 </style>
 
+
+<style>
+.talaan-top-toast{position:fixed;top:14px;left:50%;transform:translate(-50%,-18px);background:#17266b;color:#fff;padding:9px 16px;border-radius:999px;font-size:12px;font-weight:900;z-index:100500;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;box-shadow:0 8px 24px rgba(20,35,70,.18)}
+.talaan-top-toast.show{opacity:1;transform:translate(-50%,0)}
+.talaan-manual-attendance{margin:18px 0;padding:16px;border:1px solid #e4e9f2;border-radius:14px;background:#f8fafc}
+.talaan-manual-event{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.talaan-manual-event span{font-size:12px;color:#718096;font-weight:800}
+.talaan-manual-warning{margin:8px 0 12px;color:#8a4b00;font-size:12px;font-weight:800}
+.talaan-manual-attendance select{padding:10px 12px;border:1px solid #d8dfeb;border-radius:9px;background:#fff;font-weight:800}
+.talaan-manual-attendance button:disabled{opacity:.5;cursor:not-allowed}
+</style>
 </body>
 
 </html>
