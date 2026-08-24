@@ -6709,6 +6709,37 @@ async function changeAccountPassword_() {
 }
 </style>
 
+
+<style id="talaan-hamburger-final-position">
+/* FINAL HAMBURGER POSITION: keep it at the left edge, vertically centered in the header box. */
+.topbar { position: relative !important; }
+.talaan-hamburger {
+  position: absolute !important;
+  left: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  margin: 0 !important;
+}
+.talaan-hamburger:hover {
+  transform: translateY(calc(-50% - 2px)) !important;
+}
+.talaan-hamburger.menu-open {
+  transform: translate(-72px, -50%) !important;
+}
+.talaan-hamburger.menu-open:hover {
+  transform: translate(-72px, calc(-50% - 2px)) !important;
+}
+@media (max-width:700px) {
+  .talaan-hamburger {
+    position: absolute !important;
+    left: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+}
+</style>
 </body>
 
 </html>
