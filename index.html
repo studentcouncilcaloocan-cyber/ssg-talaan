@@ -6509,7 +6509,14 @@ function openProfileCropper_(img, resolve, reject) {
   document.getElementById('talaanProfileCropCancel').onclick=function(){ modal.remove(); reject(new Error('Profile picture editing cancelled.')); };
   document.getElementById('talaanProfileCropSave').onclick=function(){
     draw();
-    const data = canvas.toDataURL('image/jpeg',0.72);
+    /* Keep the saved profile picture small enough for the Apps Script JSONP URL.
+       The crop UI remains high-resolution; only the final saved image is reduced. */
+    const outputCanvas = document.createElement('canvas');
+    outputCanvas.width = 128;
+    outputCanvas.height = 128;
+    const outputCtx = outputCanvas.getContext('2d');
+    outputCtx.drawImage(canvas, 0, 0, 128, 128);
+    const data = outputCanvas.toDataURL('image/jpeg', 0.60);
     modal.remove();
     resolve(data);
   };
