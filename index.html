@@ -4818,6 +4818,16 @@ function menuButton_(label, onclick, id, active) {
   return '<button ' + (id ? 'id="' + id + '" ' : '') + 'class="' + (active ? 'active' : '') + '" onclick="' + onclick + '">' + label + '</button>';
 }
 
+function normalizeTalaanRole_(value) {
+  const r = String(value || '').trim().toUpperCase().replace(/_/g, ' ');
+  if (r === 'SECRETARY') return 'Secretary';
+  if (r === 'CLASS SEC' || r === 'CLASS SECRETARY') return 'Class Sec';
+  if (r === 'TEACHER' || r === 'TEACHERS') return 'Teacher';
+  if (r === 'ADMIN' || r === 'ADMINISTRATOR') return 'Admin';
+  if (r === 'STUDENT' || r === 'STUDENTS') return 'Student';
+  return String(value || '').trim();
+}
+
 function renderTalaanMenu_(activeId) {
   ensureHamburger_();
   const menu = document.getElementById('talaanMenu');
@@ -4833,7 +4843,16 @@ function renderTalaanMenu_(activeId) {
     }
   }
   session = session || {};
-  const role = session.role || currentRole || '';
+  const rawRole = session.role || currentRole || '';
+  const role = normalizeTalaanRole_(rawRole);
+  // Keep the existing role checks functional when the account sheet stores
+  // role values such as SECRETARY / CLASS SEC. This only normalizes the UI
+  // role representation; no permissions or other behavior are changed.
+  if (role && role !== rawRole) {
+    session.role = role;
+    currentRole = role;
+    if (talaanSession && talaanSession.session) talaanSession.session.role = role;
+  }
   const name = session.name || role;
   const position = session.position || role;
   const year = session.yearLevel && session.yearLevel !== 'ALL' ? ' • ' + getYearLabelClient_(session.yearLevel) : '';
