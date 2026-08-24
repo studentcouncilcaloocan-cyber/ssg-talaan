@@ -6527,7 +6527,7 @@ function setHeaderProfilePicture_(dataUrl) {
   const target = document.getElementById('talaanHeaderProfile');
   if (!target) return;
   if (dataUrl) {
-    target.outerHTML = '<img id="talaanHeaderProfile" class="talaan-header-profile" src="' + escapeAttribute_(dataUrl) + '" alt="Profile picture">';
+    target.outerHTML = '<img id="talaanHeaderProfile" class="talaan-header-profile" src="' + escapeAttr_(dataUrl) + '" alt="Profile picture">';
   } else {
     target.outerHTML = '<div id="talaanHeaderProfile" class="talaan-header-profile talaan-header-profile-empty" aria-label="Profile picture">👤</div>';
   }
@@ -6548,7 +6548,6 @@ async function showAccountSettings_() {
     const result = await apiRequest('accountsettings');
     if (!result || result.success !== true) throw new Error(result?.error || 'Settings could not be loaded.');
     const st = result.settings || {};
-    const parts = st.nameParts || parseNamePartsClient_(st.name || '');
     const pic = st.profilePicture || '';
     const role = st.role || currentRole || '';
     const picHtml = pic
@@ -6559,7 +6558,6 @@ async function showAccountSettings_() {
       : '<div class="talaan-settings-card"><h3>🔐 Change Password</h3><p class="section-description">This account uses its existing authorization code for sign-in, so password changes are not applicable to this staff account.</p></div>';
     const html = '<div class="talaan-account-settings-page"><h2 class="section-heading">⚙️ Settings</h2><p class="section-description">Manage your profile information and account settings.</p>' +
       '<div class="talaan-settings-card"><h3>🖼️ Profile Picture</h3><div class="talaan-settings-picture-row">' + picHtml + '<div><input id="settingsProfilePicture" type="file" accept="image/png,image/jpeg,image/webp"><p class="section-description">Choose a photo, then crop and position it before saving.</p><button class="primary-button" type="button" onclick="saveProfilePicture_()">SAVE PROFILE PICTURE</button></div></div></div>' +
-      '<div class="talaan-settings-card"><h3>✏️ Edit Name</h3><div class="talaan-settings-grid"><div><label>First Name</label><input id="settingsFirstName" value="' + escapeAttr_(parts.first || '') + '"></div><div><label>Middle Initials</label><input id="settingsMiddleInitials" value="' + escapeAttr_(parts.middle || '') + '"></div><div><label>Surname</label><input id="settingsSurname" value="' + escapeAttr_(parts.surname || '') + '"></div></div><button class="primary-button" type="button" onclick="saveAccountName_()">SAVE NAME</button></div>' +
       passwordHtml + '</div>';
     setPage_(html);
     const file = document.getElementById('settingsProfilePicture');
@@ -6585,26 +6583,6 @@ async function saveProfilePicture_() {
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save profile picture.');
     setHeaderProfilePicture_(result.profilePicture || profilePicture);
     alert('✅ Profile picture saved successfully.');
-  } catch (error) { alert('❌ ' + (error.message || error)); }
-}
-
-async function saveAccountName_() {
-  try {
-    const first = document.getElementById('settingsFirstName')?.value.trim() || '';
-    const middle = document.getElementById('settingsMiddleInitials')?.value.trim() || '';
-    const surname = document.getElementById('settingsSurname')?.value.trim() || '';
-    const name = [first, middle, surname].filter(Boolean).join(' ');
-    if (!name) throw new Error('Please enter at least one name field.');
-    const result = await apiRequest('updateaccountsettings', {name:name});
-    if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save name.');
-    if (result.session) {
-      talaanSession.session = result.session;
-      localStorage.setItem('talaanSession', JSON.stringify(talaanSession));
-      currentRole = result.session.role;
-    }
-    const badge = document.getElementById('roleBadge');
-    if (badge) badge.textContent = currentRole + (talaanSession.session.position ? ' • ' + talaanSession.session.position : '');
-    alert('✅ Name saved successfully.');
   } catch (error) { alert('❌ ' + (error.message || error)); }
 }
 
