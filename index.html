@@ -4444,14 +4444,14 @@ function escapeAttribute(
 .app-layout .sidebar{display:none!important}
 .app-layout .main-content{margin-left:0!important;width:100%!important}
 .talaan-hamburger{
-  position:fixed;left:18px;top:18px;z-index:1001;width:48px;height:48px;
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1001;width:48px;height:48px;
   border:0;border-radius:14px;background:#17266b;color:#fff;font-size:24px;
   cursor:pointer;box-shadow:0 8px 24px rgba(23,38,107,.22);
   transition:transform .28s ease,opacity .22s ease;
 }
-.talaan-hamburger:hover{transform:translateY(-2px)}
-.talaan-hamburger.menu-open{transform:translateX(-72px);opacity:0;pointer-events:none}
-.talaan-hamburger.menu-open:hover{transform:translateX(-72px)}
+.talaan-hamburger:hover{transform:translate(-50%,calc(-50% - 2px))}
+.talaan-hamburger.menu-open{transform:translate(-50%,-50%) scale(.92);opacity:0;pointer-events:none}
+.talaan-hamburger.menu-open:hover{transform:translate(-50%,-50%) scale(.92)}
 .talaan-menu-backdrop{position:fixed;inset:0;background:rgba(10,25,55,.38);z-index:999;opacity:0;pointer-events:none;transition:.25s}
 .talaan-menu-backdrop.open{opacity:1;pointer-events:auto}
 .talaan-menu{position:fixed;top:0;left:0;bottom:0;width:310px;max-width:88vw;background:#fff;z-index:1000;
@@ -4528,6 +4528,13 @@ function escapeAttribute(
 .talaan-logo-strip{display:flex;align-items:center;gap:8px}
 .talaan-logo-strip img{height:34px;width:auto;object-fit:contain}
 @media(max-width:900px){.talaan-stat-grid{grid-template-columns:repeat(2,1fr)}.talaan-profile-grid{grid-template-columns:1fr}.talaan-summary-grid{grid-template-columns:1fr}.talaan-record{grid-template-columns:1fr}.talaan-header-logo{display:none}.talaan-top-left{padding-left:58px}}
+<style>
+.topbar{position:relative!important}
+.talaan-hamburger{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
+.talaan-hamburger:hover{transform:translate(-50%,calc(-50% - 2px))!important}
+.talaan-hamburger.menu-open{transform:translate(-50%,-50%) scale(.92)!important}
+.talaan-hamburger.menu-open:hover{transform:translate(-50%,-50%) scale(.92)!important}
+@media(max-width:700px){.talaan-hamburger{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:48px!important;height:48px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;margin:0!important}.talaan-hamburger.menu-open{transform:translate(-50%,-50%) scale(.92)!important}}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -4733,20 +4740,16 @@ function renderTalaanMenu_(activeId) {
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
-  if (role !== 'Class Sec' && role !== 'Student') {
+  if (role !== 'Student') {
     html += '<div class="talaan-menu-group">Attendance</div>';
-    if (role === 'Teacher') {
+    if (role === 'Teacher' || role === 'Class Sec') {
       const lvl = session.yearLevel;
-      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
+      html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
     } else {
       ['1','2','3','4'].forEach(function(level) {
         html += menuButton_('📋 ' + getYearLabelClient_(level), "talaanNavigate_('attendance','Attendance" + level + "')", 'menuAttendance' + level, activeId === 'attendance' + level);
       });
     }
-  } else if (role === 'Class Sec') {
-    const lvl = session.yearLevel;
-    html += '<div class="talaan-menu-group">Attendance</div>';
-    html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance' + lvl || activeId === 'attendance');
   }
 
   if (role === 'Student') {
@@ -6037,7 +6040,22 @@ async function openStudentRecordFromSearch_(name, section, yearLevel) {
 async function openStudentRecord_(student) {
   if (!(currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
   try {
-    const result = await apiRequest('studentrecord', student);
+    let requestStudent = Object.assign({}, student);
+    // Resolve the exact student through the existing secure search first.
+    // This preserves the current search behavior while giving the profile endpoint
+    // the student's real TALAAN ID whenever the role is allowed to receive it.
+    try {
+      const lookup = await apiRequest('searchStudent', {query: student.name || ''});
+      const matches = Array.isArray(lookup?.students) ? lookup.students : [];
+      const exact = matches.find(function(s){
+        return String(s.name || '').trim().toLowerCase() === String(student.name || '').trim().toLowerCase() &&
+          String(s.section || '').trim().toLowerCase() === String(student.section || '').trim().toLowerCase() &&
+          String(s.yearLevel || '') === String(student.yearLevel || '');
+      });
+      if (exact && exact.studentId) requestStudent.studentId = exact.studentId;
+    } catch (_) {}
+
+    const result = await apiRequest('studentrecord', requestStudent);
     if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
     const p = result.profile || {};
     const a = p.attendance || {present:0, absent:0, rate:0, records:[], warning:false, warningLevel:'NONE'};
