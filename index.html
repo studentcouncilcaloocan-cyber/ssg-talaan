@@ -1283,7 +1283,7 @@ th {
 .talaan-student-record-list{display:grid;gap:8px}
 .talaan-student-record-row{display:grid;grid-template-columns:105px minmax(0,1fr) 95px;gap:10px;align-items:center;padding:12px 14px;border-radius:12px}
 .talaan-student-record-row.present{background:#e8f7ed;color:#167344}
-.talaan-student-record-row.absent{background:#fdeaea;color:#a82222}
+.talaan-student-record-row.absent{background:#fdeaea;color:#a82222}.talaan-toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-14px);z-index:100500;background:#17266b;color:#fff;padding:10px 18px;border-radius:999px;font-weight:900;font-size:12px;letter-spacing:.3px;box-shadow:0 12px 30px rgba(23,38,107,.22);opacity:0;pointer-events:none;transition:.2s ease}.talaan-toast.show{opacity:1;transform:translate(-50%,0)}.talaan-profile-photo{width:74px;height:74px;border-radius:50%;object-fit:cover;border:3px solid #eef2f8;background:#f6f8fc}.talaan-manual-box{margin:18px 0;padding:16px;border-radius:16px;background:#f7f9fd;border:1px solid #e5eaf3}.talaan-manual-box h4{margin:0 0 6px;color:#17266b}.talaan-manual-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.talaan-manual-controls select{min-width:150px}.talaan-present-list{display:grid;gap:7px;margin-bottom:18px}.talaan-present-item{display:grid;grid-template-columns:130px minmax(0,1fr) 120px;gap:10px;align-items:center;padding:10px 12px;border-radius:11px;background:#e8f7ed;color:#167344}.talaan-profile-picture-wrap{display:flex;align-items:center;gap:14px;margin-bottom:12px}@media(max-width:700px){.talaan-present-item{grid-template-columns:1fr}}
 @media(max-width:700px){.talaan-student-record-stats{grid-template-columns:repeat(2,1fr)}.talaan-student-record-row{grid-template-columns:1fr}.talaan-student-record-card{padding:18px}}
 </style>
 
@@ -2773,7 +2773,7 @@ function createAttendanceTable(
       }
 
       const isNameCell = c === 0 && studentName;
-      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Teacher' || currentRole === 'Admin';
+      const canOpenStudentRecord = currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin';
       if (isNameCell && canOpenStudentRecord) {
         html += '<td class="' + className + '"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromAttendance_(' + JSON.stringify(studentName) + ',' + JSON.stringify(studentSection) + ',' + JSON.stringify(studentYear) + ')">' + escapeHtml(value) + '</button></td>';
       } else {
@@ -3356,6 +3356,7 @@ async function addEvent() {
 
 async function refreshCurrentPageAfterMutation_() {
   await refreshDashboardData();
+  showTalaanToast_('REFRESHED');
   if (talaanActivePage_ === 'settings') {
     showSettings();
   } else if (talaanActivePage_ === 'attendance') {
@@ -4733,9 +4734,9 @@ function renderTalaanMenu_(activeId) {
   html += '<div class="talaan-menu-group">Main</div>';
   html += menuButton_('📊 Overall Dashboard', "talaanNavigate_('dashboard')", 'menuDashboard', activeId === 'dashboard');
 
-  if (role !== 'Class Sec') {
+  if (role !== 'Class Sec' && role !== 'Student') {
     html += '<div class="talaan-menu-group">Attendance</div>';
-    if (role === 'Student' || role === 'Teacher') {
+    if (role === 'Teacher') {
       const lvl = session.yearLevel;
       html += menuButton_('📋 ' + getYearLabelClient_(lvl), "talaanNavigate_('attendance','Attendance" + lvl + "')", 'menuAttendanceAssigned', activeId === 'attendance');
     } else {
@@ -4788,6 +4789,15 @@ function setPage_(html) {
   const content = document.getElementById('dashboardContent');
   if (!content) return;
   content.innerHTML = '<div class="talaan-page">' + html + '</div>';
+}
+
+function showTalaanToast_(message, kind) {
+  let toast = document.getElementById('talaanToast');
+  if (!toast) { toast = document.createElement('div'); toast.id = 'talaanToast'; toast.className = 'talaan-toast'; document.body.appendChild(toast); }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(window.__talaanToastTimer);
+  window.__talaanToastTimer = setTimeout(function(){ toast.classList.remove('show'); }, 1800);
 }
 
 function setActiveNav(id) {
@@ -5108,6 +5118,10 @@ async function openDashboard(role, suppliedSession, transitionOptions) {
   });
   const oldSecretaryNav = document.getElementById('secretaryNavigation');
   if (oldSecretaryNav) oldSecretaryNav.style.display = role === 'Secretary' ? '' : 'none';
+  const searchShell = document.getElementById('talaanSearchShell') || document.querySelector('.talaan-search-shell');
+  const mobileSearchToggle = document.getElementById('talaanMobileSearchToggle');
+  if (searchShell) searchShell.style.display = role === 'Student' ? 'none' : '';
+  if (mobileSearchToggle) mobileSearchToggle.style.display = role === 'Student' ? 'none' : '';
 
   ensureHamburger_();
   renderTalaanMenu_('dashboard');
@@ -5896,7 +5910,7 @@ async function searchStudent_() {
     results.innerHTML = data.students.map(function(s){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
-      return '<div class="talaan-result-card"><div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + (currentSession_().role === 'Secretary' && s.studentId ? ' • TALAAN ID: ' + escapeHtml(s.studentId) : '') + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
+      return '<div class="talaan-result-card"><div class="talaan-result-name"><button type="button" class="talaan-attendance-student-link" onclick="openStudentRecordFromSearch_(' + JSON.stringify(s.name) + ',' + JSON.stringify(s.section) + ',' + JSON.stringify(s.yearLevel) + ')">' + escapeHtml(s.name) + '</button></div><div class="talaan-result-meta">' + escapeHtml(s.section) + ' • ' + escapeHtml(getYearLabelClient_(s.yearLevel)) + ((currentSession_().role === 'Secretary' || currentSession_().role === 'Class Sec') && s.studentId ? ' • TALAAN ID: ' + escapeHtml(s.studentId) : '') + '</div><div class="talaan-stat-grid"><div class="talaan-mini-stat"><div class="n">' + s.present + '</div><div class="l">Present</div></div><div class="talaan-mini-stat"><div class="n">' + s.absent + '</div><div class="l">Absent</div></div><div class="talaan-mini-stat"><div class="n">' + Number(s.rate||0).toFixed(2) + '%</div><div class="l">Rate</div></div><div class="talaan-mini-stat ' + statusClass + '"><div class="n" style="font-size:14px">' + escapeHtml(statusText) + '</div><div class="l">Status</div></div></div></div>';
     }).join('');
   } catch (error) { if(results) results.innerHTML = '<div class="status">❌ ' + escapeHtml(error.message) + '</div>'; }
 }
@@ -5956,7 +5970,7 @@ async function searchStudentFromHeader_() {
     html += data.students.map(function(s, index){
       const statusClass = s.warning ? 'talaan-warning' : 'talaan-safe';
       const statusText = s.warning ? s.warningLevel : 'NO WARNING';
-      const talaanIdButton = (currentRole === 'Secretary' && s.studentId)
+      const talaanIdButton = ((currentRole === 'Secretary' || currentRole === 'Class Sec') && s.studentId)
         ? '<div style="margin-top:12px"><button type="button" class="primary-button" style="width:auto;margin:0" onclick="openSearchStudentIdPreviewByIndex_(' + index + ')">🪪 View TALAAN ID & QR</button></div>'
         : '';
       return '<div class="talaan-result-card">' +
@@ -5985,7 +5999,7 @@ function openSearchStudentIdPreviewByIndex_(index) {
 }
 
 function openSearchStudentIdPreview_(student) {
-  if (currentRole !== 'Secretary' || !student || !student.studentId) return;
+  if (!(currentRole === 'Secretary' || currentRole === 'Class Sec') || !student || !student.studentId) return;
 
   const existing = document.getElementById('talaanSearchStudentIdModal');
   if (existing) existing.remove();
@@ -6018,14 +6032,15 @@ async function openStudentRecordFromSearch_(name, section, yearLevel) {
 }
 
 async function openStudentRecord_(student) {
-  if (!(currentRole === 'Secretary' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
+  if (!(currentRole === 'Secretary' || currentRole === 'Class Sec' || currentRole === 'Teacher' || currentRole === 'Admin')) return;
   try {
     const result = await apiRequest('studentrecord', student);
     if (!result || result.success !== true) throw new Error(result?.error || 'Student record could not be loaded.');
     const p = result.profile || {};
     const a = p.attendance || {present:0, absent:0, rate:0, records:[], warning:false, warningLevel:'NONE'};
-    const warningClass = a.warning ? 'talaan-warning' : 'talaan-safe';
     const warningText = a.warning ? a.warningLevel : 'NO WARNING';
+    const manual = p.manualEdit || {available:false, editable:false};
+    const picture = p.profilePicture ? '<img class="talaan-profile-photo" src="' + escapeAttribute(p.profilePicture) + '" alt="Profile picture">' : '<div class="talaan-profile-photo" style="display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>';
 
     const modal = document.createElement('div');
     modal.className = 'talaan-student-record-modal';
@@ -6033,9 +6048,16 @@ async function openStudentRecord_(student) {
     modal.onclick = function(e){ if(e.target === modal) modal.remove(); };
 
     let recordsHtml = '';
+    let presentHtml = '';
     if (!a.records || !a.records.length) {
       recordsHtml = '<div class="status">No completed attendance records yet.</div>';
+      presentHtml = '<div class="status">No Present attendance records yet.</div>';
     } else {
+      const presentRecords = a.records.filter(function(r){ return r.status === 'Present'; });
+      presentRecords.slice().reverse().forEach(function(r){
+        presentHtml += '<div class="talaan-present-item"><strong>' + escapeHtml(r.dateLabel) + '</strong><div><strong>' + escapeHtml(r.event || 'Attendance Event') + '</strong><div style="font-size:11px;opacity:.8">' + escapeHtml(r.eventType || '') + '</div></div><strong>' + escapeHtml(r.time || 'Manual / no Time In') + '</strong></div>';
+      });
+      if (!presentHtml) presentHtml = '<div class="status">No Present attendance records yet.</div>';
       a.records.slice().reverse().forEach(function(r){
         const type = r.eventType ? ' • ' + escapeHtml(r.eventType) : '';
         const time = r.status === 'Present' && r.time ? ' • ' + escapeHtml(r.time) : '';
@@ -6047,19 +6069,45 @@ async function openStudentRecord_(student) {
       });
     }
 
+    let manualHtml = '';
+    if (currentRole === 'Secretary') {
+      if (manual.available && manual.editable) {
+        manualHtml = '<div class="talaan-manual-box"><h4>✏️ Manual Attendance — Today</h4><div style="font-size:12px;color:#718096;margin-bottom:10px"><strong>' + escapeHtml(manual.event || 'Today\'s Event') + '</strong> • ' + escapeHtml(manual.dateLabel || manual.date || '') + (manual.eventType ? ' • ' + escapeHtml(manual.eventType) : '') + '</div>' +
+          '<div class="talaan-manual-controls"><span>Current status: <strong>' + escapeHtml(manual.status || 'Not Yet Held') + '</strong></span><select id="manualAttendanceStatus"><option value="Present" ' + (normalizeTextClient_(manual.status)==='present'?'selected':'') + '>Present</option><option value="Absent" ' + (normalizeTextClient_(manual.status)==='absent'?'selected':'') + '>Absent</option></select><button class="primary-button" style="width:auto;margin:0" onclick="saveManualAttendanceFromProfile_(' + JSON.stringify({name:p.name,section:p.section,yearLevel:p.yearLevel,studentId:p.studentId}) + ')">SAVE ATTENDANCE</button></div><div style="font-size:11px;color:#a82222;margin-top:9px;font-weight:800">⚠️ This manually changes today\'s attendance record. The Secretary will be warned before saving.</div></div>';
+      } else {
+        manualHtml = '<div class="talaan-manual-box"><h4>✏️ Manual Attendance</h4><div style="font-size:12px;color:#718096">' + escapeHtml(manual.reason || 'Manual attendance editing is unavailable for this date.') + '</div></div>';
+      }
+    }
+
     modal.innerHTML = '<div class="talaan-student-record-card" onclick="event.stopPropagation()">' +
-      '<div class="talaan-student-record-head"><div><div class="talaan-student-record-name">' + escapeHtml(p.name || student.name) + '</div><div class="talaan-student-record-meta">' + escapeHtml(p.section || student.section || '') + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel || student.yearLevel || '')) + (p.studentId ? ' • ' + escapeHtml(p.studentId) : '') + '</div></div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanStudentRecordModal\')?.remove()">×</button></div>' +
-      '<div class="talaan-student-record-stats">' +
-        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.present||0) + '</div><div class="l">Present</div></div>' +
-        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.absent||0) + '</div><div class="l">Absent</div></div>' +
-        '<div class="talaan-student-record-stat"><div class="n">' + Number(a.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div>' +
-        '<div class="talaan-student-record-stat"><div class="n" style="font-size:14px">' + escapeHtml(warningText) + '</div><div class="l">Status</div></div>' +
-      '</div>' +
-      '<h3 class="dashboard-section-title">Attendance Records</h3><div class="talaan-student-record-list">' + recordsHtml + '</div>' +
+      '<div class="talaan-student-record-head"><div class="talaan-profile-picture-wrap">' + picture + '<div><div class="talaan-student-record-name">' + escapeHtml(p.name || student.name) + '</div><div class="talaan-student-record-meta">' + escapeHtml(p.section || student.section || '') + ' • ' + escapeHtml(getYearLabelClient_(p.yearLevel || student.yearLevel || '')) + '</div></div></div><button class="talaan-id-close" type="button" onclick="document.getElementById(\'talaanStudentRecordModal\')?.remove()">×</button></div>' +
+      '<div class="talaan-student-record-stats"><div class="talaan-student-record-stat"><div class="n">' + Number(a.present||0) + '</div><div class="l">Present</div></div><div class="talaan-student-record-stat"><div class="n">' + Number(a.absent||0) + '</div><div class="l">Absent</div></div><div class="talaan-student-record-stat"><div class="n">' + Number(a.rate||0).toFixed(2) + '%</div><div class="l">Attendance Rate</div></div><div class="talaan-student-record-stat"><div class="n" style="font-size:14px">' + escapeHtml(warningText) + '</div><div class="l">Warning Status</div></div></div>' +
+      manualHtml +
+      '<h3 class="dashboard-section-title">Present Events & Time In</h3><div class="talaan-present-list">' + presentHtml + '</div>' +
+      '<h3 class="dashboard-section-title">Full Attendance Records</h3><div class="talaan-student-record-list">' + recordsHtml + '</div>' +
     '</div>';
     document.body.appendChild(modal);
   } catch (error) {
     alert('Unable to load student record: ' + (error.message || error));
+  }
+}
+
+async function saveManualAttendanceFromProfile_(student) {
+  if (currentRole !== 'Secretary') return;
+  const select = document.getElementById('manualAttendanceStatus');
+  const status = select ? select.value : '';
+  if (!status) return;
+  const ok = window.confirm('WARNING: You are manually changing ' + (student.name || 'this student') + '\'s attendance for today.\n\nThis change is being made by the Secretary and will be saved immediately. Continue?');
+  if (!ok) return;
+  try {
+    const result = await apiRequest('updateStudentAttendance', Object.assign({}, student, {status:status}));
+    if (!result || result.success !== true) throw new Error(result?.error || 'Unable to update attendance.');
+    showTalaanToast_('ATTENDANCE SAVED');
+    const modal = document.getElementById('talaanStudentRecordModal');
+    if (modal) modal.remove();
+    await openStudentRecord_(student);
+  } catch (error) {
+    alert('Unable to save attendance: ' + (error.message || error));
   }
 }
 
@@ -6212,19 +6260,18 @@ async function saveSettingRow(row) {
   try {
     const result = await apiRequest('updateSettings', {row:row,event:document.getElementById('event_'+row)?.value.trim()||'',date:document.getElementById('date_'+row)?.value.trim()||'',cutoff:document.getElementById('cutoff_'+row)?.value.trim()||'',status:document.getElementById('status_'+row)?.value.trim()||'',type:document.getElementById('type_'+row)?.value.trim()||'Physical'});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to save event.');
-    alert('✅ Event updated successfully.');
     await refreshCurrentPageAfterMutation_();
+    showTalaanToast_((result.event && result.event.event ? result.event.event : 'EVENT') + ' CHANGED/SAVED');
   } catch(error) { alert('❌ Unable to save event.\n\n' + error.message); }
 }
 
 async function deleteEventRow_(row) {
   if (currentRole !== 'Secretary') return;
-  if (!confirm('Delete this event from Event Settings? Its matching attendance date column will also be removed from all attendance tabs.')) return;
-  try {
+    try {
     const result = await apiRequest('deleteEvent',{row:row});
     if (!result || result.success !== true) throw new Error(result?.error || 'Unable to delete event.');
-    alert('🗑 Event deleted successfully.');
     await refreshCurrentPageAfterMutation_();
+    showTalaanToast_((result.event || 'EVENT') + ' DELETED');
   } catch(error) { alert('❌ Unable to delete event.\n\n' + error.message); }
 }
 
@@ -6239,9 +6286,9 @@ async function addEvent() {
   try {
     const result=await apiRequest('addEvent',{event:event,date:date,cutoff:cutoff,status:status,type:type});
     if(!result || result.success!==true) throw new Error(result?.error||'Unable to add event.');
-    alert('✅ New event added successfully.');
     document.getElementById('newEvent').value='';document.getElementById('newDate').value='';document.getElementById('newCutoff').value='';
     closeAddEvent();await refreshCurrentPageAfterMutation_();
+    showTalaanToast_((result.event && result.event.event ? result.event.event : 'EVENT') + ' SAVED');
   } catch(error){alert('❌ Unable to add event.\n\n'+error.message);}
 }
 
@@ -6314,6 +6361,10 @@ window.addEventListener('DOMContentLoaded', function(){
   talaanSession=stored;
   currentRole=stored.session.role;
   secretaryCodeSession=stored.session.code||'';
+  const restoredSearchShell = document.getElementById('talaanSearchShell') || document.querySelector('.talaan-search-shell');
+  const restoredMobileSearch = document.getElementById('talaanMobileSearchToggle');
+  if (restoredSearchShell) restoredSearchShell.style.display = currentRole === 'Student' ? 'none' : '';
+  if (restoredMobileSearch) restoredMobileSearch.style.display = currentRole === 'Student' ? 'none' : '';
 
   // Validate the stored session before restoring the application.
   apiRequest('profile').then(function(data){
