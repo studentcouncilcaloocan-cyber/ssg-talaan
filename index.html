@@ -1285,6 +1285,19 @@ th {
 .talaan-student-record-row.present{background:#e8f7ed;color:#167344}
 .talaan-student-record-row.absent{background:#fdeaea;color:#a82222}.talaan-toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-14px);z-index:100500;background:#17266b;color:#fff;padding:10px 18px;border-radius:999px;font-weight:900;font-size:12px;letter-spacing:.3px;box-shadow:0 12px 30px rgba(23,38,107,.22);opacity:0;pointer-events:none;transition:.2s ease}.talaan-toast.show{opacity:1;transform:translate(-50%,0)}.talaan-profile-photo{width:74px;height:74px;border-radius:50%;object-fit:cover;border:3px solid #eef2f8;background:#f6f8fc}.talaan-manual-box{margin:18px 0;padding:16px;border-radius:16px;background:#f7f9fd;border:1px solid #e5eaf3}.talaan-manual-box h4{margin:0 0 6px;color:#17266b}.talaan-manual-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.talaan-manual-controls select{min-width:150px}.talaan-present-list{display:grid;gap:7px;margin-bottom:18px}.talaan-present-item{display:grid;grid-template-columns:130px minmax(0,1fr) 120px;gap:10px;align-items:center;padding:10px 12px;border-radius:11px;background:#e8f7ed;color:#167344}.talaan-profile-picture-wrap{display:flex;align-items:center;gap:14px;margin-bottom:12px}@media(max-width:700px){.talaan-present-item{grid-template-columns:1fr}}
 @media(max-width:700px){.talaan-student-record-stats{grid-template-columns:repeat(2,1fr)}.talaan-student-record-row{grid-template-columns:1fr}.talaan-student-record-card{padding:18px}}
+
+/* FINAL HEADER HAMBURGER ALIGNMENT — keep original horizontal position, vertically center inside header box */
+.topbar{position:relative!important;}
+.talaan-hamburger{position:absolute!important;left:18px!important;top:50%!important;transform:translateY(-50%)!important;}
+.talaan-hamburger:hover{transform:translateY(calc(-50% - 2px))!important;}
+.talaan-hamburger.menu-open{transform:translate(-72px,-50%)!important;}
+.talaan-hamburger.menu-open:hover{transform:translate(-72px,calc(-50% - 2px))!important;}
+@media(max-width:700px){
+  .talaan-hamburger{position:absolute!important;left:10px!important;top:50%!important;width:42px!important;height:42px!important;transform:translateY(-50%)!important;}
+  .talaan-hamburger:hover{transform:translateY(calc(-50% - 2px))!important;}
+  .talaan-hamburger.menu-open{transform:translate(-72px,-50%)!important;}
+  .talaan-hamburger.menu-open:hover{transform:translate(-72px,calc(-50% - 2px))!important;}
+}
 </style>
 
 
