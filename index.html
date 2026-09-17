@@ -1791,135 +1791,88 @@ let talaanActiveAttendanceSheet_ = '';
 
 
 function apiRequest(action, params = {}) {
-
   return new Promise(function(resolve, reject) {
-
     if (!API_URL || API_URL.indexOf('PASTE_YOUR_') === 0) {
-
-      reject(new Error(
-        'Apps Script Web App URL is not configured in INDEX.HTML.'
-      ));
-
+      reject(new Error('Apps Script Web App URL is not configured in INDEX.HTML.'));
       return;
-
     }
 
+    const baseParams = Object.assign({}, params || {});
+    if (!baseParams.token && sessionToken_()) baseParams.token = sessionToken_();
 
-    const callbackName =
-      '__talaanCallback_' +
-      Date.now() + '_' +
-      Math.random().toString(36).slice(2);
+    // Read-only requests may safely retry a transient JSONP/network failure.
+    // QR record is also retry-safe because the backend receives the same requestId.
+    const normalizedAction = String(action || '').trim().toLowerCase();
+    const retryable = [
+      'dashboard', 'attendance', 'searchstudent', 'warnings',
+      'profile', 'studentrecord', 'studentdirectory', 'accountsettings',
+      'login', 'stafflogin', 'logout', 'record'
+    ].indexOf(normalizedAction) !== -1;
+    const maxRetries = retryable ? 1 : 0;
+    const requestId = normalizedAction === 'record'
+      ? (baseParams.requestId || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2)))
+      : '';
+    if (requestId) baseParams.requestId = requestId;
 
+    let attempt = 0;
 
-    const script =
-      document.createElement('script');
+    function runAttempt() {
+      attempt++;
 
+      const callbackName = '__talaanCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      const query = new URLSearchParams();
+      query.set('action', action);
+      query.set('callback', callbackName);
+      query.set('_t', String(Date.now()) + '_' + String(attempt));
 
-    const query =
-      new URLSearchParams();
+      Object.keys(baseParams).forEach(function(key) {
+        const value = baseParams[key];
+        if (value !== undefined && value !== null) query.set(key, String(value));
+      });
 
+      let finished = false;
+      const cleanup = function() {
+        finished = true;
+        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      };
 
-    query.set('action', action);
-    query.set('callback', callbackName);
-
-
-    Object.keys(params || {}).forEach(function(key) {
-
-      const value =
-        params[key];
-
-      if (
-        value !== undefined &&
-        value !== null
-      ) {
-
-        query.set(
-          key,
-          String(value)
-        );
-
-      }
-
-    });
-
-
-    let finished = false;
-
-
-    const cleanup = function() {
-
-      finished = true;
-
-      try {
-        delete window[callbackName];
-      }
-
-      catch (e) {
-        window[callbackName] = undefined;
-      }
-
-
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-    };
-
-
-    const timer =
-      setTimeout(function() {
-
+      const retryOrReject = function(error) {
         if (finished) return;
-
+        clearTimeout(timer);
         cleanup();
 
-        reject(new Error(
-          'Apps Script API timed out. Check the Web App deployment and URL.'
-        ));
+        if (attempt <= maxRetries) {
+          console.warn('[TALAAN API] Transient request failure; retrying attempt ' + (attempt + 1) + '/' + (maxRetries + 1), action, error);
+          setTimeout(runAttempt, 350 * attempt);
+          return;
+        }
 
+        reject(error);
+      };
+
+      const timer = setTimeout(function() {
+        retryOrReject(new Error('Apps Script API timed out. Check the Web App deployment and URL.'));
       }, 30000);
 
-
-    window[callbackName] =
-      function(data) {
-
+      window[callbackName] = function(data) {
         if (finished) return;
-
         clearTimeout(timer);
-
         cleanup();
-
         resolve(data);
-
       };
 
-
-    script.onerror =
-      function() {
-
-        if (finished) return;
-
-        clearTimeout(timer);
-
-        cleanup();
-
-        reject(new Error(
-          'Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'
-        ));
-
+      script.onerror = function() {
+        retryOrReject(new Error('Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'));
       };
 
+      script.src = API_URL.replace(/\/$/, '') + '?' + query.toString();
+      document.head.appendChild(script);
+    }
 
-    script.src =
-      API_URL.replace(/\/$/, '') +
-      '?' +
-      query.toString();
-
-
-    document.head.appendChild(script);
-
+    runAttempt();
   });
-
 }
 
 
@@ -4619,49 +4572,81 @@ function apiRequest(action, params = {}) {
       return;
     }
 
-    const callbackName = '__talaanCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const script = document.createElement('script');
-    const query = new URLSearchParams();
-    query.set('action', action);
-    query.set('callback', callbackName);
+    const baseParams = Object.assign({}, params || {});
+    if (!baseParams.token && sessionToken_()) baseParams.token = sessionToken_();
 
-    const merged = Object.assign({}, params || {});
-    if (!merged.token && sessionToken_()) merged.token = sessionToken_();
+    // Read-only requests may safely retry a transient JSONP/network failure.
+    // QR record is also retry-safe because the backend receives the same requestId.
+    const normalizedAction = String(action || '').trim().toLowerCase();
+    const retryable = [
+      'dashboard', 'attendance', 'searchstudent', 'warnings',
+      'profile', 'studentrecord', 'studentdirectory', 'accountsettings',
+      'login', 'stafflogin', 'logout', 'record'
+    ].indexOf(normalizedAction) !== -1;
+    const maxRetries = retryable ? 1 : 0;
+    const requestId = normalizedAction === 'record'
+      ? (baseParams.requestId || ('rec_' + Date.now() + '_' + Math.random().toString(36).slice(2)))
+      : '';
+    if (requestId) baseParams.requestId = requestId;
 
-    Object.keys(merged).forEach(function(key) {
-      const value = merged[key];
-      if (value !== undefined && value !== null) query.set(key, String(value));
-    });
+    let attempt = 0;
 
-    let finished = false;
-    const cleanup = function() {
-      finished = true;
-      try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
+    function runAttempt() {
+      attempt++;
 
-    const timer = setTimeout(function() {
-      if (finished) return;
-      cleanup();
-      reject(new Error('Apps Script API timed out. Check the Web App deployment and URL.'));
-    }, 30000);
+      const callbackName = '__talaanCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      const query = new URLSearchParams();
+      query.set('action', action);
+      query.set('callback', callbackName);
+      query.set('_t', String(Date.now()) + '_' + String(attempt));
 
-    window[callbackName] = function(data) {
-      if (finished) return;
-      clearTimeout(timer);
-      cleanup();
-      resolve(data);
-    };
+      Object.keys(baseParams).forEach(function(key) {
+        const value = baseParams[key];
+        if (value !== undefined && value !== null) query.set(key, String(value));
+      });
 
-    script.onerror = function() {
-      if (finished) return;
-      clearTimeout(timer);
-      cleanup();
-      reject(new Error('Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'));
-    };
+      let finished = false;
+      const cleanup = function() {
+        finished = true;
+        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      };
 
-    script.src = API_URL.replace(/\/$/, '') + '?' + query.toString();
-    document.head.appendChild(script);
+      const retryOrReject = function(error) {
+        if (finished) return;
+        clearTimeout(timer);
+        cleanup();
+
+        if (attempt <= maxRetries) {
+          console.warn('[TALAAN API] Transient request failure; retrying attempt ' + (attempt + 1) + '/' + (maxRetries + 1), action, error);
+          setTimeout(runAttempt, 350 * attempt);
+          return;
+        }
+
+        reject(error);
+      };
+
+      const timer = setTimeout(function() {
+        retryOrReject(new Error('Apps Script API timed out. Check the Web App deployment and URL.'));
+      }, 30000);
+
+      window[callbackName] = function(data) {
+        if (finished) return;
+        clearTimeout(timer);
+        cleanup();
+        resolve(data);
+      };
+
+      script.onerror = function() {
+        retryOrReject(new Error('Could not connect to the Apps Script Web App. Check the /exec URL and deployment access.'));
+      };
+
+      script.src = API_URL.replace(/\/$/, '') + '?' + query.toString();
+      document.head.appendChild(script);
+    }
+
+    runAttempt();
   });
 }
 
